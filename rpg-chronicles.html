@@ -1,0 +1,2242 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPG Chronicles</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --v:#7030EF;--m:#DB1FFF;--dark:#090820;--dark2:#0c0d23;--white:#FFFFFF;
+  --card:rgba(255,255,255,0.04);--border:rgba(112,48,239,0.3);
+  --grad:linear-gradient(135deg,#7030EF,#DB1FFF);
+}
+html{scroll-behavior:smooth;}
+body{background:var(--dark);color:var(--white);font-family:'Outfit',sans-serif;min-height:100vh;overflow-x:hidden;}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 70% 60% at 10% 5%,rgba(112,48,239,0.22) 0%,transparent 65%),
+             radial-gradient(ellipse 55% 45% at 90% 90%,rgba(219,31,255,0.16) 0%,transparent 65%),
+             radial-gradient(ellipse 40% 35% at 50% 50%,rgba(112,48,239,0.06) 0%,transparent 70%);
+}
+#app{position:relative;z-index:1;max-width:1400px;margin:0 auto;padding:0 24px 60px;}
+
+/* HEADER */
+header{display:flex;align-items:center;justify-content:space-between;padding:28px 0 36px;border-bottom:1px solid var(--border);margin-bottom:36px;gap:16px;flex-wrap:wrap;}
+.logo{font-size:26px;font-weight:900;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-1px;}
+.logo em{font-style:normal;font-weight:300;opacity:.6;}
+.tabs{display:flex;gap:6px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:50px;padding:5px;}
+.tab-btn{background:none;border:none;color:rgba(255,255,255,0.45);font-family:'Outfit';font-size:13px;font-weight:700;padding:9px 20px;border-radius:50px;cursor:pointer;transition:all .25s;white-space:nowrap;}
+.tab-btn.active{background:var(--grad);color:#fff;box-shadow:0 4px 20px rgba(112,48,239,0.4);}
+
+/* SECTION */
+.section{display:none;}.section.active{display:block;}
+.grid-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;}
+.section-title{font-size:20px;font-weight:800;letter-spacing:-.3px;}
+.btn-add{background:var(--grad);border:none;color:#fff;font-family:'Outfit';font-size:13px;font-weight:800;padding:11px 24px;border-radius:50px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all .2s;box-shadow:0 4px 20px rgba(112,48,239,0.35);}
+.btn-add:hover{opacity:.88;transform:translateY(-2px);}
+
+/* GRID */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:18px;}
+.empty-state{grid-column:1/-1;text-align:center;padding:80px 20px;color:rgba(255,255,255,0.22);}
+.empty-state .icon{font-size:52px;margin-bottom:14px;}
+.empty-state .txt{font-size:15px;font-weight:500;}
+
+/* CARD */
+.card{background:var(--card);border:1px solid var(--border);border-radius:22px;padding:28px 16px 20px;text-align:center;cursor:pointer;transition:all .3s;position:relative;overflow:hidden;}
+.card::after{content:'';position:absolute;inset:0;border-radius:22px;background:var(--grad);opacity:0;transition:opacity .3s;}
+.card:hover{border-color:rgba(219,31,255,0.5);transform:translateY(-5px);box-shadow:0 24px 50px rgba(112,48,239,0.22);}
+.card:hover::after{opacity:.04;}
+.card-photo{width:80px;height:80px;border-radius:50%;object-fit:cover;margin:0 auto 14px;display:block;border:2px solid rgba(112,48,239,0.5);background:rgba(112,48,239,0.15);position:relative;z-index:1;}
+.card-photo.sqr{border-radius:16px;}
+.card-photo.sqr-sm{border-radius:12px;width:70px;height:70px;}
+.ph{width:80px;height:80px;border-radius:50%;background:rgba(112,48,239,0.12);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:30px;position:relative;z-index:1;}
+.ph.sqr{border-radius:16px;} .ph.sqr-sm{border-radius:12px;width:70px;height:70px;}
+.card-name{font-size:15px;font-weight:800;margin-bottom:4px;position:relative;z-index:1;}
+.card-sub{font-size:12px;color:rgba(255,255,255,0.45);position:relative;z-index:1;}
+.card-badge{display:inline-block;background:rgba(112,48,239,0.18);border:1px solid rgba(112,48,239,0.4);border-radius:20px;font-size:11px;font-weight:600;padding:3px 10px;margin-top:8px;color:rgba(255,255,255,0.65);position:relative;z-index:1;}
+
+/* DETAIL OVERLAY */
+.dov{display:none;position:fixed;inset:0;background:rgba(9,8,32,0.75);z-index:100;backdrop-filter:blur(10px);}
+.dov.open{display:flex;}
+.dpanel{background:#0d0e28;border-left:1px solid var(--border);width:100%;max-width:920px;margin-left:auto;height:100%;overflow-y:auto;display:flex;flex-direction:column;animation:slideIn .32s cubic-bezier(.16,1,.3,1);}
+@keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+.dhead{padding:20px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#0d0e28;z-index:10;gap:12px;}
+.btn-back{background:rgba(255,255,255,0.06);border:1px solid var(--border);color:#fff;font-family:'Outfit';font-size:13px;font-weight:700;padding:9px 18px;border-radius:50px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px;}
+.btn-back:hover{background:rgba(255,255,255,0.11);}
+.btn-del{background:rgba(255,50,50,0.1);border:1px solid rgba(255,60,60,0.3);color:rgba(255,110,110,0.9);font-family:'Outfit';font-size:13px;font-weight:700;padding:9px 16px;border-radius:50px;cursor:pointer;transition:all .2s;}
+.btn-del:hover{background:rgba(255,50,50,0.22);}
+.dbody{padding:36px 32px;flex:1;}
+
+/* DETAIL SECTIONS */
+.ds{margin-bottom:38px;}
+.dst{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2.5px;color:var(--v);margin-bottom:18px;display:flex;align-items:center;gap:12px;}
+.dst::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* HERO */
+.char-hero{display:flex;gap:28px;align-items:flex-start;margin-bottom:38px;}
+.pw{position:relative;flex-shrink:0;}
+.hphoto{width:120px;height:120px;border-radius:22px;object-fit:cover;border:2px solid rgba(112,48,239,0.5);background:rgba(112,48,239,0.12);display:block;}
+.hphoto.circle{border-radius:50%;}
+.hph{width:120px;height:120px;border-radius:22px;background:rgba(112,48,239,0.1);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:48px;}
+.hph.circle{border-radius:50%;}
+.pedit{position:absolute;bottom:-5px;right:-5px;width:30px;height:30px;background:var(--grad);border:2.5px solid #0d0e28;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:transform .2s;z-index:2;}
+.pedit:hover{transform:scale(1.15);}
+.hinfo{flex:1;min-width:0;}
+.ename{font-size:26px;font-weight:900;background:none;border:none;color:#fff;font-family:'Outfit';width:100%;padding:5px 10px;border-radius:10px;margin-bottom:14px;transition:background .2s;letter-spacing:-.3px;}
+.ename:hover,.ename:focus{background:rgba(255,255,255,0.05);outline:none;}
+.mrow{display:flex;gap:14px;flex-wrap:wrap;}
+.mf{display:flex;flex-direction:column;gap:5px;}
+.ml{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,0.35);}
+.mi{background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:9px;color:#fff;font-family:'Outfit';font-size:14px;padding:7px 13px;outline:none;transition:border-color .2s;min-width:90px;}
+.mi:focus{border-color:var(--v);}
+select.mi option{background:#0d0e28;}
+
+/* TEXTAREA */
+.ea{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:14px;color:#fff;font-family:'Outfit';font-size:14px;line-height:1.65;padding:14px;width:100%;resize:vertical;min-height:100px;outline:none;transition:border-color .2s;}
+.ea:focus{border-color:var(--v);}
+
+/* RICH EDITABLE FIELD */
+.rich-ea{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:14px;color:#fff;font-family:'Outfit';font-size:14px;line-height:1.75;padding:14px;width:100%;min-height:100px;outline:none;transition:border-color .2s;cursor:text;word-break:break-word;}
+.rich-ea:focus{border-color:var(--v);}
+.rich-ea[data-empty="true"]::before{content:attr(data-placeholder);color:rgba(255,255,255,0.22);pointer-events:none;font-style:italic;}
+.rich-ea.tall{min-height:140px;}
+
+/* LOCATION CHIP */
+.loc-chip{
+  display:inline-flex;align-items:center;gap:5px;
+  background:linear-gradient(135deg,rgba(112,48,239,0.28),rgba(219,31,255,0.22));
+  border:1px solid rgba(219,31,255,0.55);
+  border-radius:20px;padding:2px 11px 2px 8px;
+  font-size:12px;font-weight:800;
+  color:#DB1FFF;
+  cursor:default;vertical-align:middle;
+  margin:0 2px;
+  user-select:none;
+  text-shadow:0 0 12px rgba(219,31,255,0.4);
+  box-shadow:0 0 10px rgba(219,31,255,0.15);
+  transition:background .2s,box-shadow .2s;
+}
+.loc-chip:hover{background:linear-gradient(135deg,rgba(112,48,239,0.42),rgba(219,31,255,0.35));box-shadow:0 0 18px rgba(219,31,255,0.3);}
+
+/* STATS */
+.sgrid{display:grid;grid-template-columns:1fr auto;gap:28px;align-items:center;}
+.sinputs{display:flex;flex-direction:column;gap:13px;}
+.srow{display:flex;align-items:center;gap:12px;}
+.slbl{font-size:12px;font-weight:700;width:110px;color:rgba(255,255,255,0.75);}
+.sslider{flex:1;-webkit-appearance:none;height:4px;border-radius:4px;background:rgba(255,255,255,0.09);outline:none;cursor:pointer;}
+.sslider::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--grad);cursor:pointer;border:2px solid #0d0e28;box-shadow:0 0 10px rgba(219,31,255,0.55);}
+.sval{background:rgba(255,255,255,0.07);border:1px solid var(--border);border-radius:9px;color:#fff;font-family:'Outfit';font-size:14px;font-weight:800;padding:5px 8px;width:54px;text-align:center;outline:none;}
+.seff{font-size:11px;color:var(--m);font-weight:800;width:38px;text-align:right;white-space:nowrap;}
+.radar-wrap{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.radar-note{font-size:11px;color:rgba(255,255,255,0.28);text-align:center;font-weight:500;}
+
+/* AFFILIATION */
+.afflist{display:flex;flex-direction:column;gap:10px;}
+.affitem{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:13px;padding:11px 14px;}
+.affav{width:38px;height:38px;border-radius:50%;object-fit:cover;border:1.5px solid var(--border);background:rgba(112,48,239,0.18);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;}
+.affav.sqr{border-radius:10px;}
+.affname{font-size:14px;font-weight:700;} .affsub{font-size:11px;color:rgba(255,255,255,0.35);}
+.affinf{flex:1;}
+.afftype{background:rgba(112,48,239,0.14);border:1px solid rgba(112,48,239,0.4);border-radius:20px;color:rgba(255,255,255,0.8);font-family:'Outfit';font-size:12px;font-weight:700;padding:4px 12px;outline:none;min-width:90px;}
+.btn-rm{background:rgba(255,50,50,0.1);border:1px solid rgba(255,50,50,0.2);color:rgba(255,100,100,0.7);border-radius:50%;width:27px;height:27px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;}
+.btn-rm:hover{background:rgba(255,50,50,0.22);color:rgba(255,100,100,1);}
+.btn-adds{background:rgba(112,48,239,0.12);border:1.5px dashed rgba(112,48,239,0.45);color:rgba(255,255,255,0.55);font-family:'Outfit';font-size:13px;font-weight:700;padding:9px 16px;border-radius:11px;cursor:pointer;width:100%;transition:all .2s;margin-top:8px;}
+.btn-adds:hover{background:rgba(112,48,239,0.22);color:#fff;}
+
+/* MONEY */
+.mrow2{display:flex;gap:14px;align-items:flex-end;}
+
+/* OWNED ITEMS LIST */
+.owned-list{display:flex;flex-direction:column;gap:9px;}
+.owned-item{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:13px;padding:11px 14px;transition:border-color .2s;}
+.owned-item:hover{border-color:rgba(112,48,239,0.5);}
+.owned-item-img{width:38px;height:38px;border-radius:10px;object-fit:cover;background:rgba(112,48,239,0.15);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;}
+.owned-item-info{flex:1;}
+.owned-item-name{font-size:14px;font-weight:700;}
+.owned-item-buff{font-size:11px;color:var(--m);font-weight:600;margin-top:2px;}
+
+/* CREATURE STATS */
+.cstats{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px;}
+.cstat{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:16px;padding:20px;text-align:center;}
+.cstat .cval{font-size:36px;font-weight:900;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1;}
+.cstat .cval.alt{background:linear-gradient(135deg,#DB1FFF,#7030EF);-webkit-background-clip:text;background-clip:text;}
+.cstat .clbl{font-size:11px;text-transform:uppercase;letter-spacing:1.8px;color:rgba(255,255,255,0.35);margin:6px 0 12px;font-weight:700;}
+.cstat .cinp{background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:9px;color:#fff;font-family:'Outfit';font-size:14px;font-weight:800;padding:7px 12px;width:100%;text-align:center;outline:none;}
+.cstat .cinp:focus{border-color:var(--v);}
+
+/* ITEM BUFFS */
+.bgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.bitem{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:13px;padding:14px;}
+.blbl{font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:8px;text-transform:uppercase;letter-spacing:1.2px;font-weight:700;}
+.binp{background:rgba(112,48,239,0.14);border:1px solid rgba(112,48,239,0.4);border-radius:9px;color:var(--m);font-family:'Outfit';font-size:22px;font-weight:900;padding:7px 10px;width:100%;outline:none;text-align:center;transition:border-color .2s;}
+.binp:focus{border-color:var(--m);}
+
+/* MODAL */
+.smodal{display:none;position:fixed;inset:0;background:rgba(9,8,32,0.88);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(10px);}
+.smodal.open{display:flex;}
+.sbox{background:#0d0e28;border:1px solid var(--border);border-radius:22px;padding:30px;width:100%;max-width:500px;max-height:72vh;overflow-y:auto;}
+.stitle{font-size:18px;font-weight:800;margin-bottom:22px;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.slist{display:flex;flex-direction:column;gap:9px;}
+.sitem{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:13px;padding:13px;cursor:pointer;transition:all .2s;}
+.sitem:hover{background:rgba(112,48,239,0.14);border-color:var(--v);}
+.sitem img,.sitem .sph{width:42px;height:42px;border-radius:50%;object-fit:cover;background:rgba(112,48,239,0.18);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.sitem .sph.sqr{border-radius:12px;}
+.sitem .sname{font-weight:700;font-size:14px;} .sitem .ssub{font-size:12px;color:rgba(255,255,255,0.38);}
+.btn-mc{background:rgba(255,255,255,0.06);border:1px solid var(--border);color:#fff;font-family:'Outfit';padding:10px 20px;border-radius:50px;cursor:pointer;margin-top:16px;width:100%;font-size:13px;font-weight:700;}
+.sghead{font-size:10px;text-transform:uppercase;letter-spacing:2.5px;color:rgba(255,255,255,0.35);margin:14px 0 8px;font-weight:800;}
+
+/* LIGHTBOX */
+#lightbox{display:none;position:fixed;inset:0;z-index:9000;background:rgba(9,8,32,0.92);backdrop-filter:blur(18px);align-items:center;justify-content:center;cursor:zoom-out;}
+#lightbox.open{display:flex;animation:lbIn .22s ease;}
+@keyframes lbIn{from{opacity:0}to{opacity:1}}
+#lightbox img{max-width:90vw;max-height:88vh;border-radius:18px;box-shadow:0 30px 100px rgba(112,48,239,0.5),0 0 0 1.5px rgba(219,31,255,0.3);object-fit:contain;animation:lbScale .25s cubic-bezier(.16,1,.3,1);}
+@keyframes lbScale{from{transform:scale(.88)}to{transform:scale(1)}}
+#lightbox-close{position:fixed;top:22px;right:26px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s;}
+#lightbox-close:hover{background:rgba(219,31,255,0.25);}
+
+/* Make all images show zoom cursor */
+img.zoomable{cursor:zoom-in;transition:transform .2s,box-shadow .2s;}
+img.zoomable:hover{transform:scale(1.04);box-shadow:0 8px 30px rgba(112,48,239,0.35);}
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(112,48,239,0.38);border-radius:3px;}
+.file-inp{display:none;}
+
+/* TOOLTIP helpers */
+.hint{font-size:12px;color:rgba(255,255,255,0.32);margin-top:6px;font-weight:500;}
+
+/* ===== CHAPTERS ===== */
+.chap-layout{display:grid;grid-template-columns:280px 1fr;gap:24px;min-height:calc(100vh - 200px);}
+.chap-sidebar{display:flex;flex-direction:column;gap:10px;}
+.chap-sidebar-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+.chap-sidebar-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2.5px;color:rgba(255,255,255,0.35);}
+.chap-item{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:13px 15px;cursor:pointer;transition:all .25s;position:relative;overflow:hidden;}
+.chap-item::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--grad);border-radius:3px 0 0 3px;opacity:0;transition:opacity .2s;}
+.chap-item:hover{border-color:rgba(112,48,239,0.5);transform:translateX(3px);}
+.chap-item.active{border-color:rgba(112,48,239,0.65);background:rgba(112,48,239,0.1);}
+.chap-item.active::before{opacity:1;}
+.chap-item-num{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--v);margin-bottom:3px;}
+.chap-item-name{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.chap-item-meta{font-size:11px;color:rgba(255,255,255,0.3);margin-top:4px;display:flex;gap:8px;align-items:center;}
+.chap-status-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.chap-empty-side{text-align:center;padding:40px 16px;color:rgba(255,255,255,0.2);font-size:13px;font-weight:500;border:1.5px dashed rgba(112,48,239,0.2);border-radius:16px;}
+
+/* CHAPTER EDITOR */
+.chap-editor{background:var(--card);border:1px solid var(--border);border-radius:22px;padding:32px 36px;display:flex;flex-direction:column;gap:28px;}
+.chap-editor-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:360px;color:rgba(255,255,255,0.18);gap:14px;}
+.chap-editor-empty .icon{font-size:56px;}
+.chap-editor-empty .txt{font-size:15px;font-weight:500;}
+.chap-ed-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;}
+.chap-ed-left{flex:1;}
+.chap-num-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2.5px;color:var(--v);margin-bottom:8px;}
+.chap-title-inp{background:none;border:none;color:#fff;font-family:'Outfit';font-size:24px;font-weight:900;width:100%;outline:none;padding:4px 0;letter-spacing:-.3px;border-bottom:1.5px solid transparent;transition:border-color .2s;}
+.chap-title-inp:focus{border-color:rgba(112,48,239,0.5);}
+.chap-title-inp::placeholder{color:rgba(255,255,255,0.2);}
+.chap-ed-actions{display:flex;gap:8px;flex-shrink:0;}
+.chap-status-sel{background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:50px;color:#fff;font-family:'Outfit';font-size:12px;font-weight:700;padding:8px 14px;outline:none;cursor:pointer;transition:all .2s;}
+.chap-status-sel:focus{border-color:var(--v);}
+.chap-status-sel option{background:#0d0e28;}
+
+/* STATUS BADGES */
+.badge-planejado{background:rgba(100,100,255,0.15);border:1px solid rgba(100,100,255,0.4);color:rgba(140,140,255,0.9);border-radius:20px;font-size:11px;font-weight:700;padding:3px 10px;}
+.badge-em-jogo{background:rgba(80,200,100,0.15);border:1px solid rgba(80,200,100,0.4);color:rgba(100,220,120,0.9);border-radius:20px;font-size:11px;font-weight:700;padding:3px 10px;}
+.badge-concluido{background:rgba(219,31,255,0.15);border:1px solid rgba(219,31,255,0.35);color:rgba(219,31,255,0.9);border-radius:20px;font-size:11px;font-weight:700;padding:3px 10px;}
+.badge-pausado{background:rgba(255,180,50,0.15);border:1px solid rgba(255,180,50,0.35);color:rgba(255,200,80,0.9);border-radius:20px;font-size:11px;font-weight:700;padding:3px 10px;}
+
+/* CHAPTER SECTIONS */
+.chap-section{display:flex;flex-direction:column;gap:10px;}
+.chap-sec-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2.5px;color:var(--v);display:flex;align-items:center;gap:12px;}
+.chap-sec-label::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* SYNOPSIS + NOTES use rich-ea */
+/* SCENE CARDS */
+.scenes-list{display:flex;flex-direction:column;gap:10px;}
+.scene-card{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:border-color .2s;}
+.scene-card:hover{border-color:rgba(112,48,239,0.45);}
+.scene-head{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;}
+.scene-num{font-size:11px;font-weight:800;color:rgba(255,255,255,0.35);width:26px;text-align:right;flex-shrink:0;}
+.scene-name-inp{background:none;border:none;color:#fff;font-family:'Outfit';font-size:14px;font-weight:700;flex:1;outline:none;}
+.scene-name-inp::placeholder{color:rgba(255,255,255,0.22);}
+.scene-toggle{font-size:12px;color:rgba(255,255,255,0.3);margin-left:auto;transition:transform .2s;flex-shrink:0;cursor:pointer;}
+.scene-toggle.open{transform:rotate(180deg);}
+.scene-body{display:none;padding:0 14px 14px;}
+.scene-body.open{display:block;}
+.scene-rm{background:none;border:none;color:rgba(255,80,80,0.45);cursor:pointer;font-size:17px;padding:0 4px;transition:color .2s;flex-shrink:0;}
+.scene-rm:hover{color:rgba(255,80,80,0.9);}
+
+/* PARTICIPANTS */
+.part-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;}
+.part-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(112,48,239,0.12);border:1px solid rgba(112,48,239,0.35);border-radius:20px;padding:4px 10px 4px 6px;font-size:12px;font-weight:700;color:rgba(255,255,255,0.8);cursor:default;}
+.part-chip img,.part-chip .part-ph{width:20px;height:20px;border-radius:50%;object-fit:cover;background:rgba(112,48,239,0.2);display:flex;align-items:center;justify-content:center;font-size:11px;}
+.part-chip .part-rm{background:none;border:none;color:rgba(255,80,80,0.5);cursor:pointer;font-size:14px;padding:0;margin-left:2px;line-height:1;transition:color .2s;}
+.part-chip .part-rm:hover{color:rgba(255,80,80,1);}
+.part-add-btn{background:rgba(112,48,239,0.1);border:1.5px dashed rgba(112,48,239,0.4);border-radius:20px;color:rgba(255,255,255,0.45);font-family:'Outfit';font-size:12px;font-weight:700;padding:4px 12px;cursor:pointer;transition:all .2s;}
+.part-add-btn:hover{background:rgba(112,48,239,0.2);color:#fff;}
+
+/* LINKED LOCATIONS */
+.loc-link-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;}
+.loc-link-chip{display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,rgba(112,48,239,0.2),rgba(219,31,255,0.14));border:1px solid rgba(219,31,255,0.4);border-radius:20px;padding:4px 10px 4px 7px;font-size:12px;font-weight:700;color:#DB1FFF;}
+.loc-link-chip .loc-rm{background:none;border:none;color:rgba(255,80,80,0.5);cursor:pointer;font-size:14px;padding:0;margin-left:3px;line-height:1;transition:color .2s;}
+.loc-link-chip .loc-rm:hover{color:rgba(255,80,80,1);}
+
+/* TIMELINE / PROGRESS */
+.chap-progress-bar{width:100%;height:6px;background:rgba(255,255,255,0.07);border-radius:6px;overflow:hidden;margin-top:6px;}
+.chap-progress-fill{height:100%;background:var(--grad);border-radius:6px;transition:width .4s;}
+
+/* PICKER MODAL reuse smodal / sbox */
+/* DRAG HANDLE for reorder */
+.chap-drag{color:rgba(255,255,255,0.15);cursor:grab;font-size:16px;padding:0 6px 0 0;flex-shrink:0;}
+.chap-drag:active{cursor:grabbing;}
+
+/* CHAPTER OVERVIEW STATS */
+.chap-overview{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:4px;}
+.chov-card{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:14px;padding:14px 16px;text-align:center;}
+.chov-val{font-size:28px;font-weight:900;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1;}
+.chov-lbl{font-size:10px;text-transform:uppercase;letter-spacing:1.8px;color:rgba(255,255,255,0.35);margin-top:5px;font-weight:700;}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  .chap-layout{grid-template-columns:1fr;}
+  .chap-editor{padding:20px 18px;}
+  .chap-overview{grid-template-columns:repeat(3,1fr);}
+}
+
+/* EVO CHAIN */
+.evo-chain{display:flex;flex-direction:column;gap:10px;}
+.evo-row{display:flex;align-items:center;gap:0;}
+.evo-node-wrap{display:flex;align-items:center;}
+.evo-card{
+  background:rgba(255,255,255,0.04);border:1.5px solid var(--border);
+  border-radius:14px;padding:10px 14px;display:flex;align-items:center;
+  gap:10px;min-width:130px;transition:all .22s;
+}
+.evo-card.evo-active{
+  border-color:var(--v);background:rgba(112,48,239,0.18);
+  box-shadow:0 0 20px rgba(112,48,239,0.28);
+}
+.evo-card.evo-dim{
+  opacity:.4;filter:brightness(.75);
+  cursor:pointer;
+}
+.evo-card.evo-dim:hover{opacity:.75;filter:brightness(1);border-color:rgba(219,31,255,0.45);}
+.evo-img{width:36px;height:36px;border-radius:9px;object-fit:cover;background:rgba(112,48,239,0.15);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;}
+.evo-info{flex:1;min-width:0;}
+.evo-name{font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.evo-you{font-size:10px;color:var(--m);font-weight:700;margin-top:1px;}
+.evo-connector{display:flex;flex-direction:column;align-items:center;padding:0 6px;gap:3px;flex-shrink:0;}
+.evo-line{width:36px;height:2px;background:linear-gradient(90deg,rgba(112,48,239,0.5),rgba(219,31,255,0.5));}
+.evo-label{
+  background:rgba(219,31,255,0.1);border:1px solid rgba(219,31,255,0.35);
+  border-radius:20px;color:rgba(219,31,255,0.9);font-family:'Outfit';
+  font-size:10px;font-weight:700;padding:2px 9px;outline:none;
+  max-width:100px;text-align:center;
+}
+.evo-label::placeholder{color:rgba(219,31,255,0.35);}
+.evo-rm{background:rgba(255,50,50,0.1);border:1px solid rgba(255,50,50,0.2);color:rgba(255,100,100,0.6);border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;margin-left:4px;}
+.evo-rm:hover{background:rgba(255,50,50,0.3);color:#fff;}
+
+/* AUTH SCREEN */
+#auth-screen{display:none;position:fixed;inset:0;z-index:500;background:var(--dark);align-items:center;justify-content:center;}
+#auth-screen.open{display:flex;}
+.auth-box{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:28px;padding:48px 44px;width:100%;max-width:420px;position:relative;}
+.auth-glow{position:absolute;inset:-1px;border-radius:28px;background:var(--grad);z-index:-1;opacity:.15;pointer-events:none;}
+.auth-logo{font-size:30px;font-weight:900;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-1.5px;text-align:center;margin-bottom:6px;}
+.auth-sub{text-align:center;font-size:13px;color:rgba(255,255,255,0.35);font-weight:500;margin-bottom:32px;}
+.auth-tabs{display:flex;background:rgba(255,255,255,0.05);border-radius:12px;padding:4px;margin-bottom:26px;}
+.auth-tab{flex:1;background:none;border:none;color:rgba(255,255,255,0.4);font-family:'Outfit';font-size:13px;font-weight:700;padding:9px;border-radius:9px;cursor:pointer;transition:all .2s;}
+.auth-tab.active{background:var(--grad);color:#fff;box-shadow:0 4px 16px rgba(112,48,239,0.4);}
+.auth-field{margin-bottom:14px;}
+.auth-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,0.35);margin-bottom:7px;display:block;}
+.auth-input{width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:12px;color:#fff;font-family:'Outfit';font-size:15px;padding:13px 16px;outline:none;transition:border-color .2s;}
+.auth-input:focus{border-color:var(--v);}
+.auth-btn{width:100%;background:var(--grad);border:none;color:#fff;font-family:'Outfit';font-size:15px;font-weight:800;padding:14px;border-radius:14px;cursor:pointer;margin-top:10px;transition:all .2s;box-shadow:0 6px 24px rgba(112,48,239,0.45);}
+.auth-btn:hover{opacity:.88;transform:translateY(-2px);}
+.auth-btn:disabled{opacity:.45;cursor:not-allowed;transform:none;}
+.auth-err{color:rgba(255,100,100,0.9);font-size:13px;font-weight:600;text-align:center;margin-top:12px;min-height:18px;}
+.auth-ok{color:rgba(80,220,120,0.9);font-size:13px;font-weight:600;text-align:center;margin-top:12px;}
+.btn-logout{background:rgba(255,255,255,0.05);border:1px solid var(--border);color:rgba(255,255,255,0.45);font-family:'Outfit';font-size:12px;font-weight:700;padding:8px 16px;border-radius:50px;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.btn-logout:hover{background:rgba(255,50,50,0.12);border-color:rgba(255,80,80,0.3);color:rgba(255,120,120,0.9);}
+.auth-user{font-size:12px;color:rgba(255,255,255,0.28);font-weight:500;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.auth-loading{display:none;position:fixed;inset:0;z-index:600;background:rgba(9,8,32,0.9);align-items:center;justify-content:center;flex-direction:column;gap:18px;backdrop-filter:blur(10px);}
+.auth-loading.open{display:flex;}
+.auth-spinner{width:50px;height:50px;border:4px solid rgba(112,48,239,0.2);border-top-color:var(--m);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.auth-loading-txt{font-size:14px;font-weight:700;color:rgba(255,255,255,0.4);}
+
+/* LOCATION CARD */
+.loc-card-img{width:100%;height:110px;object-fit:cover;border-radius:14px;margin-bottom:14px;display:block;}
+.loc-card-ph{width:100%;height:110px;border-radius:14px;background:rgba(112,48,239,0.1);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:36px;margin-bottom:14px;}
+.loc-tag{display:inline-flex;align-items:center;gap:6px;background:rgba(112,48,239,0.14);border:1px solid rgba(112,48,239,0.35);border-radius:20px;font-size:11px;font-weight:700;padding:4px 11px;color:rgba(255,255,255,0.7);}
+
+/* {{ AUTOCOMPLETE DROPDOWN */
+#loc-dropdown{
+  display:none;position:fixed;z-index:9999;
+  background:#13123a;border:1.5px solid var(--v);border-radius:14px;
+  padding:6px;min-width:220px;max-width:320px;max-height:260px;overflow-y:auto;
+  box-shadow:0 16px 50px rgba(112,48,239,0.5);
+}
+#loc-dropdown.open{display:block;animation:fadeUp .15s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.ldd-head{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,0.3);font-weight:800;padding:4px 10px 8px;}
+.ldd-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;cursor:pointer;transition:background .15s;}
+.ldd-item:hover,.ldd-item.sel{background:rgba(112,48,239,0.25);}
+.ldd-img{width:30px;height:30px;border-radius:8px;object-fit:cover;flex-shrink:0;}
+.ldd-ph{width:30px;height:30px;border-radius:8px;background:rgba(112,48,239,0.18);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.ldd-name{font-size:13px;font-weight:700;}
+.ldd-type{font-size:11px;color:rgba(255,255,255,0.35);}
+.ldd-empty{padding:14px 12px;font-size:13px;color:rgba(255,255,255,0.3);text-align:center;}
+
+@media(max-width:700px){
+  .sgrid{grid-template-columns:1fr;}
+  .char-hero{flex-direction:column;align-items:center;text-align:center;}
+  .dpanel{max-width:100%;}
+  .bgrid{grid-template-columns:repeat(2,1fr);}
+  .cstats{grid-template-columns:1fr;}
+  .dbody{padding:24px 18px;}
+}
+</style>
+</head>
+<body>
+<!-- AUTH LOADING -->
+<div id="auth-loading" class="auth-loading">
+  <div class="auth-spinner"></div>
+  <div class="auth-loading-txt">Carregando...</div>
+</div>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen" class="open">
+  <div class="auth-box">
+    <div class="auth-glow"></div>
+    <div class="auth-logo">RPG Chronicles</div>
+    <div class="auth-sub">Seu grimório digital de campanhas</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="authSwitchTab('login')">Entrar</button>
+      <button class="auth-tab" onclick="authSwitchTab('signup')">Criar conta</button>
+    </div>
+    <div id="auth-login-form">
+      <div class="auth-field">
+        <label class="auth-label">E-mail</label>
+        <input class="auth-input" id="login-email" type="email" placeholder="seu@email.com" autocomplete="email">
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Senha</label>
+        <input class="auth-input" id="login-pass" type="password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button class="auth-btn" id="btn-login" onclick="doLogin()">Entrar →</button>
+      <div class="auth-err" id="login-err"></div>
+    </div>
+    <div id="auth-signup-form" style="display:none">
+      <div class="auth-field">
+        <label class="auth-label">E-mail</label>
+        <input class="auth-input" id="signup-email" type="email" placeholder="seu@email.com" autocomplete="email">
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Senha (mínimo 6 caracteres)</label>
+        <input class="auth-input" id="signup-pass" type="password" placeholder="••••••••" autocomplete="new-password">
+      </div>
+      <button class="auth-btn" id="btn-signup" onclick="doSignup()">Criar conta →</button>
+      <div class="auth-err" id="signup-err"></div>
+      <div class="auth-ok" id="signup-ok"></div>
+    </div>
+  </div>
+</div>
+
+<div id="app">
+  <header>
+    <div class="logo">RPG <em>Chronicles</em></div>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('chars')">⚔️ Personagens</button>
+      <button class="tab-btn" onclick="switchTab('items')">🎒 Itens</button>
+      <button class="tab-btn" onclick="switchTab('creatures')">🐉 Criaturas</button>
+      <button class="tab-btn" onclick="switchTab('locations')">🗺️ Locais</button>
+      <button class="tab-btn" onclick="switchTab('chapters')">📖 Capítulos</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div id="save-status" style="font-size:12px;font-weight:700;color:rgba(80,220,120,0.9);opacity:0;transition:opacity .4s;white-space:nowrap;"></div>
+      <div class="auth-user" id="auth-user-email"></div>
+      <button class="btn-logout" onclick="doLogout()">Sair</button>
+    </div>
+  </header>
+
+  <!-- CHARACTERS -->
+  <div id="sec-chars" class="section active">
+    <div class="grid-header">
+      <div class="section-title">Personagens</div>
+      <button class="btn-add" onclick="newChar()">＋ Novo Personagem</button>
+    </div>
+    <div id="chars-grid" class="grid"></div>
+  </div>
+
+  <!-- ITEMS -->
+  <div id="sec-items" class="section">
+    <div class="grid-header">
+      <div class="section-title">Itens</div>
+      <button class="btn-add" onclick="newItem()">＋ Novo Item</button>
+    </div>
+    <div id="items-grid" class="grid"></div>
+  </div>
+
+  <!-- CREATURES -->
+  <div id="sec-creatures" class="section">
+    <div class="grid-header">
+      <div class="section-title">Criaturas & Monstros</div>
+      <button class="btn-add" onclick="newCreature()">＋ Nova Criatura</button>
+    </div>
+    <div id="creatures-grid" class="grid"></div>
+  </div>
+
+  <!-- LOCATIONS -->
+  <div id="sec-locations" class="section">
+    <div class="grid-header">
+      <div class="section-title">Locais</div>
+      <button class="btn-add" onclick="newLocation()">＋ Novo Local</button>
+    </div>
+    <div id="locations-grid" class="grid"></div>
+  </div>
+
+  <!-- CHAPTERS -->
+  <div id="sec-chapters" class="section">
+    <div class="grid-header">
+      <div class="section-title">📖 Capítulos da História</div>
+      <button class="btn-add" onclick="newChapter()">＋ Novo Capítulo</button>
+    </div>
+
+    <!-- Overview stats -->
+    <div class="chap-overview" id="chap-overview"></div>
+
+    <!-- Progress bar -->
+    <div style="margin-bottom:24px;">
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,0.35);font-weight:700;margin-bottom:6px;">
+        <span>Progresso da Campanha</span>
+        <span id="chap-progress-pct">0%</span>
+      </div>
+      <div class="chap-progress-bar"><div class="chap-progress-fill" id="chap-progress-fill" style="width:0%"></div></div>
+    </div>
+
+    <div class="chap-layout">
+      <!-- Sidebar: chapter list -->
+      <div class="chap-sidebar">
+        <div class="chap-sidebar-header">
+          <div class="chap-sidebar-title">Capítulos</div>
+        </div>
+        <div id="chap-list"></div>
+      </div>
+
+      <!-- Main editor -->
+      <div id="chap-editor" class="chap-editor">
+        <div class="chap-editor-empty">
+          <div class="icon">📖</div>
+          <div class="txt">Selecione ou crie um capítulo</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL PANEL -->
+<div id="dov" class="dov" onclick="closePanelBg(event)">
+  <div class="dpanel">
+    <div class="dhead">
+      <button class="btn-back" onclick="closePanel()">← Voltar</button>
+      <button class="btn-del" id="btn-del">🗑 Excluir</button>
+    </div>
+    <div class="dbody" id="dbody"></div>
+  </div>
+</div>
+
+<!-- AFFILIATION MODAL -->
+<div id="affmod" class="smodal">
+  <div class="sbox">
+    <div class="stitle" id="affmod-title">Selecionar Afiliação</div>
+    <div id="affmod-list" class="slist"></div>
+    <button class="btn-mc" onclick="closeAffMod()">Fechar</button>
+  </div>
+</div>
+
+<!-- ITEM PICKER MODAL -->
+<div id="itemmod" class="smodal">
+  <div class="sbox">
+    <div class="stitle">🎒 Adicionar Item ao Personagem</div>
+    <div id="itemmod-list" class="slist"></div>
+    <button class="btn-mc" onclick="closeItemMod()">Fechar</button>
+  </div>
+</div>
+
+<!-- EVO PICKER MODAL -->
+<div id="evomod" class="smodal">
+  <div class="sbox">
+    <div class="stitle">🧬 Adicionar à Cadeia Evolutiva</div>
+    <div id="evomod-list" class="slist"></div>
+    <button class="btn-mc" onclick="closeEvoMod()">Fechar</button>
+  </div>
+</div>
+
+<!-- CHAPTER PARTICIPANT PICKER -->
+<div id="chappartmod" class="smodal">
+  <div class="sbox">
+    <div class="stitle" id="chappartmod-title">Adicionar Participante</div>
+    <div id="chappartmod-list" class="slist"></div>
+    <button class="btn-mc" onclick="closeChapPartMod()">Fechar</button>
+  </div>
+</div>
+
+<!-- CHAPTER LOCATION PICKER -->
+<div id="chaplocmod" class="smodal">
+  <div class="sbox">
+    <div class="stitle">📍 Vincular Local</div>
+    <div id="chaplocmod-list" class="slist"></div>
+    <button class="btn-mc" onclick="closeChapLocMod()">Fechar</button>
+  </div>
+</div>
+
+<input type="file" class="file-inp" id="photo-inp" accept="image/*">
+
+<!-- LIGHTBOX -->
+<div id="lightbox" onclick="closeLightbox()">
+  <button id="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lightbox-img" src="" alt="">
+</div>
+
+<!-- {{ LOCATION DROPDOWN -->
+<div id="loc-dropdown">
+  <div class="ldd-head">📍 Mencionar Local</div>
+  <div id="ldd-list"></div>
+</div>
+
+<script>
+// ============ STATE ============
+const SK = ['forca','agilidade','inteligencia','resistencia','mana','carisma'];
+const SL = ['Força','Agilidade','Inteligência','Resistência','Mana','Carisma'];
+let S = { characters:[], items:[], creatures:[], locations:[], chapters:[] };
+let tab = 'chars', curId = null, curType = null;
+
+// ============ SUPABASE ============
+const SB_URL = 'https://rsokpfbkwxbzdpwznlbr.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJzb2twZmJrd3hiemRwd3pubGJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwNTQzNzQsImV4cCI6MjA4OTYzMDM3NH0.K_1lwvATpPgnujwqistqUmytEB3162GTOmYzBmWNz2I';
+const sb = supabase.createClient(SB_URL, SB_KEY);
+let currentUser = null;
+
+// ============ AUTH FUNCTIONS ============
+function authSwitchTab(t){
+  document.getElementById('auth-login-form').style.display = t==='login'?'block':'none';
+  document.getElementById('auth-signup-form').style.display = t==='signup'?'block':'none';
+  document.querySelectorAll('.auth-tab').forEach((b,i)=>b.classList.toggle('active',[0,1][i]===(t==='login'?0:1)));
+}
+
+async function doLogin(){
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-err');
+  const btn   = document.getElementById('btn-login');
+  errEl.textContent=''; btn.disabled=true; btn.textContent='Entrando...';
+  const {data,error} = await sb.auth.signInWithPassword({email,password:pass});
+  btn.disabled=false; btn.textContent='Entrar →';
+  if(error){ errEl.textContent=friendlyAuthError(error.message); return; }
+  await onLogin(data.user);
+}
+
+async function doSignup(){
+  const email = document.getElementById('signup-email').value.trim();
+  const pass  = document.getElementById('signup-pass').value;
+  const errEl = document.getElementById('signup-err');
+  const okEl  = document.getElementById('signup-ok');
+  const btn   = document.getElementById('btn-signup');
+  errEl.textContent=''; okEl.textContent='';
+  if(pass.length<6){ errEl.textContent='Senha precisa ter pelo menos 6 caracteres.'; return; }
+  btn.disabled=true; btn.textContent='Criando conta...';
+  const {data,error} = await sb.auth.signUp({email,password:pass});
+  btn.disabled=false; btn.textContent='Criar conta →';
+  if(error){ errEl.textContent=friendlyAuthError(error.message); return; }
+  // If email confirmation is disabled, user is logged in right away
+  if(data.session){ await onLogin(data.user); return; }
+  okEl.textContent='✓ Conta criada! Verifique seu e-mail para confirmar.';
+}
+
+async function doLogout(){
+  showLoading(true);
+  await sb.auth.signOut();
+  currentUser=null;
+  S={characters:[],items:[],creatures:[],locations:[],chapters:[]};
+  document.getElementById('auth-user-email').textContent='';
+  document.getElementById('app').style.display='none';
+  document.getElementById('auth-screen').classList.add('open');
+  showLoading(false);
+}
+
+async function onLogin(user){
+  currentUser=user;
+  document.getElementById('auth-user-email').textContent=user.email;
+  document.getElementById('auth-screen').classList.remove('open');
+  document.getElementById('app').style.display='block';
+  showLoading(true,'Carregando seus dados...');
+  try{
+    await Promise.race([
+      loadFromSupabase(),
+      new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),8000))
+    ]);
+  }catch(e){
+    console.warn('Load error, usando cache local:',e);
+    load();
+    showSaveStatus('warn','Sem conexão — dados locais carregados');
+  }
+  showLoading(false);
+  renderGrid();
+}
+
+function friendlyAuthError(msg){
+  if(msg.includes('Invalid login')) return 'E-mail ou senha incorretos.';
+  if(msg.includes('Email not confirmed')) return 'Confirme seu e-mail antes de entrar.';
+  if(msg.includes('User already registered')) return 'Este e-mail já está cadastrado.';
+  if(msg.includes('Password should')) return 'Senha muito fraca. Use pelo menos 6 caracteres.';
+  return msg;
+}
+
+function showLoading(v, txt='Carregando...'){
+  const el=document.getElementById('auth-loading');
+  el.querySelector('.auth-loading-txt').textContent=txt;
+  el.classList.toggle('open',v);
+}
+
+// ============ CLOUD SAVE / LOAD ============
+let _syncTimer=null;
+
+function save(){
+  // Immediate local cache
+  try{ localStorage.setItem('rpg_v2_cache',JSON.stringify(S)); }catch(e){}
+  showSaveStatus('ok');
+  // Debounce cloud sync 1.2s after last change
+  clearTimeout(_syncTimer);
+  _syncTimer=setTimeout(syncToSupabase, 1200);
+}
+
+async function syncToSupabase(){
+  if(!currentUser) return;
+  const uid=currentUser.id;
+  try{
+    await Promise.all([
+      syncTable('characters', S.characters, uid),
+      syncTable('items',      S.items,      uid),
+      syncTable('creatures',  S.creatures,  uid),
+      syncTable('locations',  S.locations,  uid),
+      syncTable('chapters',   S.chapters,   uid),
+    ]);
+    showSaveStatus('ok','Salvo na nuvem ☁️');
+  }catch(e){
+    showSaveStatus('err','Erro ao sincronizar com a nuvem');
+    console.error('Sync error:',e);
+  }
+}
+
+async function syncTable(table, arr, uid){
+  // Upsert all current records
+  if(arr.length>0){
+    const rows=arr.map(item=>({id:item.id, user_id:uid, data:item, updated_at:new Date().toISOString()}));
+    const {error}=await sb.from(table).upsert(rows, {onConflict:'id'});
+    if(error) throw error;
+  }
+  // Delete records removed locally
+  const currentIds=arr.map(i=>i.id);
+  if(currentIds.length>0){
+    await sb.from(table).delete().eq('user_id',uid).not('id','in',`(${currentIds.map(i=>`"${i}"`).join(',')})`);
+  } else {
+    await sb.from(table).delete().eq('user_id',uid);
+  }
+}
+
+async function loadFromSupabase(){
+  if(!currentUser) return;
+  const uid=currentUser.id;
+  const [ch,it,cr,lo,cap]=await Promise.all([
+    sb.from('characters').select('data').eq('user_id',uid),
+    sb.from('items').select('data').eq('user_id',uid),
+    sb.from('creatures').select('data').eq('user_id',uid),
+    sb.from('locations').select('data').eq('user_id',uid),
+    sb.from('chapters').select('data').eq('user_id',uid),
+  ]);
+  if(ch.error) throw ch.error;
+  if(it.error) throw it.error;
+  if(cr.error) throw cr.error;
+  if(lo.error) throw lo.error;
+  S.characters = ch.data?.map(r=>r.data)||[];
+  S.items      = it.data?.map(r=>r.data)||[];
+  S.creatures  = cr.data?.map(r=>r.data)||[];
+  S.locations  = lo.data?.map(r=>r.data)||[];
+  S.chapters   = cap.data?.map(r=>r.data)||[];
+  try{ localStorage.setItem('rpg_v2_cache',JSON.stringify(S)); }catch(e){}
+}
+
+function load(){
+  // Legacy localStorage fallback (used only before auth)
+  try{
+    const r=localStorage.getItem('rpg_v2_cache')||localStorage.getItem('rpg_v2');
+    if(r){ const d=JSON.parse(r); S=d; if(!S.locations)S.locations=[]; if(!S.chapters)S.chapters=[]; }
+  }catch(e){}
+}
+
+let _saveTimer=null;
+function showSaveStatus(type,msg){
+  let el=document.getElementById('save-status');
+  if(!el) return;
+  clearTimeout(_saveTimer);
+  const icons={ok:'✓',warn:'⚠',err:'✗'};
+  const colors={ok:'rgba(80,220,120,0.9)',warn:'rgba(255,190,50,0.9)',err:'rgba(255,80,80,0.9)'};
+  el.textContent=icons[type]+' '+(msg||(type==='ok'?'Salvo':''));
+  el.style.color=colors[type];
+  el.style.opacity='1';
+  _saveTimer=setTimeout(()=>{ el.style.opacity='0'; },type==='ok'?1800:5000);
+}
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2); }
+function byId(arr,id){ return arr.find(x=>x.id===id); }
+function dStats(){ return {forca:50,agilidade:50,inteligencia:50,resistencia:50,mana:50,carisma:50}; }
+
+// ============ TABS ============
+function switchTab(t){
+  tab=t;
+  const tabs=['chars','items','creatures','locations','chapters'];
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',tabs[i]===t));
+  document.querySelectorAll('.section').forEach((s,i)=>s.classList.toggle('active',['sec-chars','sec-items','sec-creatures','sec-locations','sec-chapters'][i]==='sec-'+t));
+  renderGrid();
+}
+
+// ============ GRIDS ============
+function renderGrid(){
+  if(tab==='chars') renderCharsGrid();
+  else if(tab==='items') renderItemsGrid();
+  else if(tab==='creatures') renderCreaturesGrid();
+  else if(tab==='locations') renderLocationsGrid();
+  else renderChaptersView();
+}
+
+function renderCharsGrid(){
+  const g=document.getElementById('chars-grid');
+  if(!S.characters.length){g.innerHTML=`<div class="empty-state"><div class="icon">🧙‍♀️</div><div class="txt">Nenhum personagem cadastrado</div></div>`;return;}
+  g.innerHTML=S.characters.map(c=>`
+    <div class="card" onclick="openChar('${c.id}')">
+      ${c.photo?`<img src="${c.photo}" class="card-photo">`:`<div class="ph">🧙</div>`}
+      <div class="card-name">${esc(c.name)||'Sem nome'}</div>
+      <div class="card-sub">${c.age?c.age+' anos':''} ${c.gender?'· '+c.gender:''}</div>
+      ${c.money?.currency?`<div class="card-badge">💰 ${c.money.amount||0} ${esc(c.money.currency)}</div>`:''}
+    </div>`).join('');
+}
+
+function renderItemsGrid(){
+  const g=document.getElementById('items-grid');
+  if(!S.items.length){g.innerHTML=`<div class="empty-state"><div class="icon">⚔️</div><div class="txt">Nenhum item cadastrado</div></div>`;return;}
+  g.innerHTML=S.items.map(it=>`
+    <div class="card" onclick="openItem('${it.id}')">
+      ${it.photo?`<img src="${it.photo}" class="card-photo sqr-sm">`:`<div class="ph sqr-sm">🗡️</div>`}
+      <div class="card-name">${esc(it.name)||'Sem nome'}</div>
+      <div class="card-sub">${buffSum(it.buffs)}</div>
+    </div>`).join('');
+}
+
+function renderCreaturesGrid(){
+  const g=document.getElementById('creatures-grid');
+  if(!S.creatures.length){g.innerHTML=`<div class="empty-state"><div class="icon">🐉</div><div class="txt">Nenhuma criatura cadastrada</div></div>`;return;}
+  g.innerHTML=S.creatures.map(c=>`
+    <div class="card" onclick="openCreature('${c.id}')">
+      ${c.photo?`<img src="${c.photo}" class="card-photo sqr">`:`<div class="ph sqr">🐉</div>`}
+      <div class="card-name">${esc(c.name)||'Sem nome'}</div>
+      <div class="card-sub">❤️ ${c.hp||0} HP &nbsp;·&nbsp; ⭐ ${c.xp||0} XP</div>
+    </div>`).join('');
+}
+
+function renderLocationsGrid(){
+  const g=document.getElementById('locations-grid');
+  if(!S.locations.length){g.innerHTML=`<div class="empty-state"><div class="icon">🗺️</div><div class="txt">Nenhum local cadastrado</div></div>`;return;}
+  g.innerHTML=S.locations.map(l=>`
+    <div class="card" onclick="openLocation('${l.id}')">
+      ${l.photo?`<img src="${l.photo}" class="loc-card-img">`:`<div class="loc-card-ph">🏔️</div>`}
+      <div class="card-name">${esc(l.name)||'Sem nome'}</div>
+      ${l.type?`<div class="loc-tag">📍 ${esc(l.type)}</div>`:'<div class="card-sub">Local</div>'}
+    </div>`).join('');
+}
+
+function buffSum(b){
+  if(!b) return 'Sem buffs';
+  const p=SK.filter(k=>b[k]>0).map(k=>`+${b[k]} ${SL[SK.indexOf(k)].slice(0,3)}`);
+  return p.length?p.join(', '):'Sem buffs';
+}
+
+function esc(s){ return s?String(s).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])):'';}
+
+// ============ NEW ============
+function newChar(){
+  const c={id:uid(),name:'Novo Personagem',age:'',gender:'',bio:'',powers:'',
+    stats:dStats(),affiliations:[],money:{amount:0,currency:'Ouro'},items:[]};
+  S.characters.push(c);save();openChar(c.id);
+}
+function newItem(){
+  const it={id:uid(),name:'Novo Item',photo:'',description:'',
+    buffs:{forca:0,agilidade:0,inteligencia:0,resistencia:0,mana:0,carisma:0}};
+  S.items.push(it);save();openItem(it.id);
+}
+function newCreature(){
+  const c={id:uid(),name:'Nova Criatura',photo:'',hp:100,xp:50,type:'',notes:'',affiliations:[]};
+  S.creatures.push(c);save();openCreature(c.id);
+}
+function newLocation(){
+  const l={id:uid(),name:'Novo Local',photo:'',type:'',description:'',notes:''};
+  S.locations.push(l);save();openLocation(l.id);
+}
+
+// ============ PANEL ============
+function openPanel(){ document.getElementById('dov').classList.add('open'); }
+function closePanel(){ document.getElementById('dov').classList.remove('open'); curId=null; curType=null; renderGrid(); }
+function closePanelBg(e){ if(e.target===document.getElementById('dov')) closePanel(); }
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    if(document.getElementById('affmod').classList.contains('open')) closeAffMod();
+    else if(document.getElementById('itemmod').classList.contains('open')) closeItemMod();
+    else if(document.getElementById('evomod').classList.contains('open')) closeEvoMod();
+    else if(document.getElementById('chappartmod').classList.contains('open')) closeChapPartMod();
+    else if(document.getElementById('chaplocmod').classList.contains('open')) closeChapLocMod();
+    else closePanel();
+  }
+});
+
+// ============ CHAR DETAIL ============
+function openChar(id){
+  curId=id; curType='char';
+  const c=byId(S.characters,id); if(!c) return;
+  document.getElementById('btn-del').onclick=()=>delEntity('char',id);
+  const eff=effStats(c);
+  document.getElementById('dbody').innerHTML=`
+    <div class="char-hero">
+      <div class="pw">
+        ${c.photo?`<img src="${c.photo}" class="hphoto circle" id="hpimg">`
+          :`<div class="hph circle" id="hpimg" style="font-size:48px">🧙</div>`}
+        <div class="pedit" onclick="triggerPhoto('char','${id}')">✏️</div>
+      </div>
+      <div class="hinfo">
+        <input class="ename" value="${esc(c.name)}" placeholder="Nome do personagem"
+          oninput="upChar('${id}','name',this.value)">
+        <div class="mrow">
+          <div class="mf">
+            <div class="ml">Idade</div>
+            <input class="mi" type="number" min="0" value="${c.age}" placeholder="—" style="width:80px"
+              oninput="upChar('${id}','age',this.value)">
+          </div>
+          <div class="mf">
+            <div class="ml">Sexo</div>
+            <select class="mi" onchange="upChar('${id}','gender',this.value)">
+              <option value="">—</option>
+              ${['Masculino','Feminino','Não-binário','Outro'].map(g=>`<option value="${g}" ${c.gender===g?'selected':''}>${g}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ds">
+      <div class="dst">Biografia</div>
+      <div class="rich-ea" contenteditable="true"
+        data-save="char:${id}:bio"
+        data-initial='${JSON.stringify(c.bio||"")}'
+        data-placeholder="Escreva a história do personagem... ({{ para mencionar local)"></div>
+    </div>
+
+    <div class="ds">
+      <div class="dst">Poderes & Habilidades</div>
+      <div class="rich-ea" contenteditable="true"
+        data-save="char:${id}:powers"
+        data-initial='${JSON.stringify(c.powers||"")}'
+        data-placeholder="Poderes, magias, habilidades especiais... ({{ para mencionar local)"></div>
+    </div>
+
+    <div class="ds">
+      <div class="dst">Status</div>
+      <div class="sgrid">
+        <div class="sinputs">
+          ${SK.map((k,i)=>{
+            const base=c.stats[k]||0, e=eff[k]||0, bonus=e-base;
+            return `<div class="srow">
+              <div class="slbl">${SL[i]}</div>
+              <input type="range" class="sslider" min="0" max="9999" value="${base}"
+                id="sl-${id}-${k}" oninput="upStat('${id}','${k}',this.value)">
+              <input type="number" class="sval" min="0" value="${base}"
+                id="sv-${id}-${k}" oninput="upStat('${id}','${k}',this.value)" style="width:72px">
+              <div class="seff" id="se-${id}-${k}">${bonus>0?'<span style="color:var(--m)">+'+fmtStat(bonus)+'</span>':''}</div>
+            </div>`;
+          }).join('')}
+        </div>
+        <div class="radar-wrap">
+          <div id="radar-${id}">${drawRadar(eff)}</div>
+          <div class="radar-note">Stats com buffs de itens</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ds">
+      <div class="dst">Afiliações</div>
+      <div id="aff-${id}" class="afflist">${renderCharAffs(c)}</div>
+      <button class="btn-adds" onclick="openAffMod('char','${id}')">＋ Adicionar Afiliação</button>
+    </div>
+
+    <div class="ds">
+      <div class="dst">Dinheiro</div>
+      <div class="mrow2">
+        <div class="mf">
+          <div class="ml">Quantidade</div>
+          <input class="mi" type="number" min="0" value="${c.money?.amount||0}" style="width:140px"
+            oninput="upMoney('${id}','amount',this.value)">
+        </div>
+        <div class="mf" style="flex:1">
+          <div class="ml">Nome da Moeda</div>
+          <input class="mi" type="text" value="${esc(c.money?.currency||'')}" placeholder="ex: Ouro, Créditos..." style="width:100%"
+            oninput="upMoney('${id}','currency',this.value)">
+        </div>
+      </div>
+    </div>
+
+    <div class="ds">
+      <div class="dst">Itens em Posse</div>
+      <div id="citems-${id}" class="owned-list">${renderCharItems(c)}</div>
+      <button class="btn-adds" style="margin-top:10px" onclick="openItemMod('${id}')">＋ Adicionar Item</button>
+    </div>`;
+  openPanel();
+  initAllRichFields();
+}
+
+function renderCharAffs(c){
+  if(!c.affiliations||!c.affiliations.length) return `<div class="hint">Nenhuma afiliação adicionada.</div>`;
+  return c.affiliations.map((a,i)=>{
+    const t=byId(S.characters,a.targetId); if(!t) return '';
+    return `<div class="affitem">
+      ${t.photo?`<img src="${t.photo}" class="affav">`:`<div class="affav">🧙</div>`}
+      <div class="affinf"><div class="affname">${esc(t.name)}</div></div>
+      <input class="afftype" value="${esc(a.type)}" placeholder="pai, mestre, aliado..."
+        oninput="upAff('char','${c.id}',${i},this.value)">
+      <button class="btn-rm" onclick="rmAff('char','${c.id}',${i})">×</button>
+    </div>`;
+  }).join('');
+}
+
+function renderCharItems(c){
+  const owned=(c.items||[]).map(iid=>byId(S.items,iid)).filter(Boolean);
+  if(!owned.length) return `<div class="hint">Nenhum item ainda. Clique em "Adicionar Item" abaixo.</div>`;
+  return owned.map(it=>{
+    const bs=buffSum(it.buffs);
+    return `<div class="owned-item">
+      ${it.photo?`<img src="${it.photo}" class="owned-item-img" style="border-radius:10px;object-fit:cover;">`:`<div class="owned-item-img">🗡️</div>`}
+      <div class="owned-item-info">
+        <div class="owned-item-name">${esc(it.name)}</div>
+        ${bs!=='Sem buffs'?`<div class="owned-item-buff">✨ ${bs}</div>`:''}
+      </div>
+      <button class="btn-rm" onclick="removeItem('${c.id}','${it.id}')" title="Remover item">×</button>
+    </div>`;
+  }).join('');
+}
+
+function effStats(c){
+  const e={...c.stats};
+  (c.items||[]).forEach(iid=>{
+    const it=byId(S.items,iid);
+    if(it&&it.buffs) SK.forEach(k=>{ e[k]=(e[k]||0)+(it.buffs[k]||0); });
+  });
+  return e;
+}
+
+// ============ CHAR UPDATES ============
+function upChar(id,field,val){ const c=byId(S.characters,id);if(!c)return;c[field]=val;save(); }
+function upMoney(id,field,val){ const c=byId(S.characters,id);if(!c)return;if(!c.money)c.money={};c.money[field]=field==='amount'?(parseFloat(val)||0):val;save(); }
+
+function upStat(id,key,val){
+  const c=byId(S.characters,id);if(!c)return;
+  const v=Math.max(0,parseInt(val)||0);
+  c.stats[key]=v;save();
+  const sl=document.getElementById(`sl-${id}-${key}`);
+  const sv=document.getElementById(`sv-${id}-${key}`);
+  if(sl)sl.value=v; if(sv)sv.value=v;
+  const eff=effStats(c);
+  const bonus=eff[key]-v;
+  const se=document.getElementById(`se-${id}-${key}`);
+  if(se)se.innerHTML=bonus>0?`<span style="color:var(--m)">+${fmtStat(bonus)}</span>`:'';
+  const r=document.getElementById(`radar-${id}`);
+  if(r)r.innerHTML=drawRadar(eff);
+}
+
+function removeItem(cid,iid){
+  const c=byId(S.characters,cid);if(!c)return;
+  if(!c.items)c.items=[];
+  c.items=c.items.filter(i=>i!==iid);
+  save();
+  refreshCharItems(cid);
+}
+
+function addItemToChar(cid,iid){
+  const c=byId(S.characters,cid);if(!c)return;
+  if(!c.items)c.items=[];
+  if(!c.items.includes(iid)) c.items.push(iid);
+  save();
+  refreshCharItems(cid);
+  // Refresh picker list so added item moves out
+  openItemMod(cid);
+}
+
+function refreshCharItems(cid){
+  const c=byId(S.characters,cid);if(!c)return;
+  const el=document.getElementById(`citems-${cid}`);
+  if(el) el.innerHTML=renderCharItems(c);
+  // Refresh radar + stat bonuses
+  const eff=effStats(c);
+  const r=document.getElementById(`radar-${cid}`);
+  if(r) r.innerHTML=drawRadar(eff);
+  SK.forEach(k=>{
+    const base=c.stats[k]||0, bonus=eff[k]-base;
+    const se=document.getElementById(`se-${cid}-${k}`);
+    if(se) se.innerHTML=bonus>0?`<span style="color:var(--m)">+${fmtStat(bonus)}</span>`:'';
+  });
+}
+
+function openItemMod(cid){
+  const c=byId(S.characters,cid);if(!c)return;
+  const mod=document.getElementById('itemmod');
+  const list=document.getElementById('itemmod-list');
+  // Show only items not already owned
+  const owned=c.items||[];
+  const available=S.items.filter(it=>!owned.includes(it.id));
+  if(!available.length){
+    list.innerHTML=`<div class="hint" style="text-align:center;padding:20px">
+      ${S.items.length===0?'Nenhum item cadastrado. Vá à aba Itens para criar.':'Todos os itens já foram adicionados a este personagem.'}
+    </div>`;
+  } else {
+    list.innerHTML=available.map(it=>{
+      const bs=buffSum(it.buffs);
+      return `<div class="sitem" onclick="addItemToChar('${cid}','${it.id}')">
+        ${it.photo?`<img src="${it.photo}" style="border-radius:10px">`:`<div class="sph sqr">🗡️</div>`}
+        <div>
+          <div class="sname">${esc(it.name)}</div>
+          <div class="ssub">${bs!=='Sem buffs'?bs:'Sem buffs'}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  mod.dataset.charId=cid;
+  mod.classList.add('open');
+}
+
+function closeItemMod(){ document.getElementById('itemmod').classList.remove('open'); }
+
+// ============ AFFILIATIONS ============
+function upAff(type,eid,idx,val){
+  const arr=type==='char'?S.characters:S.creatures;
+  const e=byId(arr,eid);if(!e)return;
+  if(!e.affiliations)e.affiliations=[];
+  if(e.affiliations[idx])e.affiliations[idx].type=val;
+  save();
+}
+function rmAff(type,eid,idx){
+  const arr=type==='char'?S.characters:S.creatures;
+  const e=byId(arr,eid);if(!e)return;
+  e.affiliations.splice(idx,1);save();
+  const el=document.getElementById(`aff-${eid}`);
+  if(type==='char'){const c=byId(S.characters,eid);if(el&&c)el.innerHTML=renderCharAffs(c);}
+  else{const c=byId(S.creatures,eid);if(el&&c)el.innerHTML=renderCreatureAffs(c);}
+}
+
+function openAffMod(type,eid){
+  const mod=document.getElementById('affmod');
+  const list=document.getElementById('affmod-list');
+  const title=document.getElementById('affmod-title');
+  if(type==='char'){
+    title.textContent='Vincular a outro Personagem';
+    const c=byId(S.characters,eid);
+    const existing=(c?.affiliations||[]).map(a=>a.targetId);
+    const avail=S.characters.filter(ch=>ch.id!==eid&&!existing.includes(ch.id));
+    if(!avail.length){list.innerHTML=`<div class="hint" style="text-align:center;padding:16px">Nenhum outro personagem disponível.</div>`;
+    }else{
+      list.innerHTML=avail.map(ch=>`
+        <div class="sitem" onclick="addAff('char','${eid}','${ch.id}','char')">
+          ${ch.photo?`<img src="${ch.photo}">`:`<div class="sph">🧙</div>`}
+          <div><div class="sname">${esc(ch.name)}</div><div class="ssub">${ch.age?ch.age+' anos':''}</div></div>
+        </div>`).join('');
+    }
+  } else {
+    title.textContent='Vincular a Personagem ou Criatura';
+    const cr=byId(S.creatures,eid);
+    const existing=(cr?.affiliations||[]).map(a=>a.targetId);
+    const chars=S.characters.filter(ch=>!existing.includes(ch.id));
+    const creatures=S.creatures.filter(c=>c.id!==eid&&!existing.includes(c.id));
+    let html='';
+    if(chars.length){ html+=`<div class="sghead">Personagens</div>`+chars.map(ch=>`
+      <div class="sitem" onclick="addAff('creature','${eid}','${ch.id}','char')">
+        ${ch.photo?`<img src="${ch.photo}">`:`<div class="sph">🧙</div>`}
+        <div><div class="sname">${esc(ch.name)}</div><div class="ssub">Personagem</div></div>
+      </div>`).join('');
+    }
+    if(creatures.length){ html+=`<div class="sghead">Criaturas</div>`+creatures.map(c=>`
+      <div class="sitem" onclick="addAff('creature','${eid}','${c.id}','creature')">
+        ${c.photo?`<img src="${c.photo}" style="border-radius:12px">`:`<div class="sph sqr">🐉</div>`}
+        <div><div class="sname">${esc(c.name)}</div><div class="ssub">Criatura</div></div>
+      </div>`).join('');
+    }
+    if(!html) html=`<div class="hint" style="text-align:center;padding:16px">Nenhuma entidade disponível.</div>`;
+    list.innerHTML=html;
+  }
+  mod.classList.add('open');
+}
+
+function addAff(entityType,eid,targetId,targetType){
+  if(entityType==='char'){
+    const c=byId(S.characters,eid);if(!c)return;
+    if(!c.affiliations)c.affiliations=[];
+    c.affiliations.push({targetId,type:''});save();
+    const el=document.getElementById(`aff-${eid}`);
+    if(el)el.innerHTML=renderCharAffs(c);
+  } else {
+    const c=byId(S.creatures,eid);if(!c)return;
+    if(!c.affiliations)c.affiliations=[];
+    c.affiliations.push({targetId,targetType,type:''});save();
+    const el=document.getElementById(`aff-${eid}`);
+    if(el)el.innerHTML=renderCreatureAffs(c);
+  }
+  closeAffMod();
+}
+function closeAffMod(){ document.getElementById('affmod').classList.remove('open'); }
+
+// ============ ITEM DETAIL ============
+function openItem(id){
+  curId=id; curType='item';
+  const it=byId(S.items,id);if(!it)return;
+  document.getElementById('btn-del').onclick=()=>delEntity('item',id);
+  const owners=S.characters.filter(c=>c.items&&c.items.includes(id));
+  document.getElementById('dbody').innerHTML=`
+    <div class="char-hero">
+      <div class="pw">
+        ${it.photo?`<img src="${it.photo}" class="hphoto" style="border-radius:22px">`
+          :`<div class="hph" style="border-radius:22px;font-size:52px">🗡️</div>`}
+        <div class="pedit" onclick="triggerPhoto('item','${id}')">✏️</div>
+      </div>
+      <div class="hinfo">
+        <input class="ename" value="${esc(it.name)}" placeholder="Nome do item"
+          oninput="upItem('${id}','name',this.value)">
+        <div class="hint" style="margin-top:6px">
+          ${owners.length?`Possuído por: ${owners.map(c=>esc(c.name)).join(', ')}`:'Nenhum personagem possui este item'}
+        </div>
+      </div>
+    </div>
+
+    <div class="ds">
+      <div class="dst">Descrição</div>
+      <div class="rich-ea" contenteditable="true"
+        data-save="item:${id}:description"
+        data-initial='${JSON.stringify(it.description||"")}'
+        data-placeholder="Descreva o item, sua origem e propriedades... ({{ para mencionar local)"></div>
+    </div>
+
+    <div class="ds">
+      <div class="dst">Buffs de Status</div>
+      <div class="hint" style="margin-bottom:16px">Estes bônus são somados automaticamente aos status do personagem que possuir este item.</div>
+      <div class="bgrid">
+        ${SK.map((k,i)=>`
+          <div class="bitem">
+            <div class="blbl">${SL[i]}</div>
+            <input type="number" class="binp" min="0" value="${it.buffs?.[k]||0}" placeholder="0"
+              oninput="upBuff('${id}','${k}',this.value)">
+          </div>`).join('')}
+      </div>
+    </div>`;
+  openPanel();
+  initAllRichFields();
+}
+
+function upItem(id,field,val){ const it=byId(S.items,id);if(!it)return;it[field]=val;save(); }
+function upBuff(id,key,val){ const it=byId(S.items,id);if(!it)return;if(!it.buffs)it.buffs={};it.buffs[key]=parseInt(val)||0;save(); }
+
+// ============ CREATURE DETAIL ============
+function openCreature(id){
+  curId=id; curType='creature';
+  const c=byId(S.creatures,id);if(!c)return;
+  document.getElementById('btn-del').onclick=()=>delEntity('creature',id);
+  document.getElementById('dbody').innerHTML=`
+    <div class="char-hero">
+      <div class="pw">
+        ${c.photo?`<img src="${c.photo}" class="hphoto" style="border-radius:22px">`
+          :`<div class="hph" style="border-radius:22px;font-size:48px">🐉</div>`}
+        <div class="pedit" onclick="triggerPhoto('creature','${id}')">✏️</div>
+      </div>
+      <div class="hinfo">
+        <input class="ename" value="${esc(c.name)}" placeholder="Nome da criatura"
+          oninput="upCreature('${id}','name',this.value)">
+        <div class="mrow">
+          <div class="mf">
+            <div class="ml">Tipo</div>
+            <input class="mi" value="${esc(c.type||'')}" placeholder="ex: Dragão, Goblin..."
+              oninput="upCreature('${id}','type',this.value)">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cstats">
+      <div class="cstat">
+        <div class="cval" id="hp-disp-${id}">${c.hp||0}</div>
+        <div class="clbl">❤️ Pontos de Vida</div>
+        <input type="number" class="cinp" min="0" value="${c.hp||0}"
+          oninput="upCreature('${id}','hp',this.value);document.getElementById('hp-disp-${id}').textContent=this.value||0">
+      </div>
+      <div class="cstat">
+        <div class="cval alt" id="xp-disp-${id}">${c.xp||0}</div>
+        <div class="clbl">⭐ XP ao Derrotar</div>
+        <input type="number" class="cinp" min="0" value="${c.xp||0}"
+          oninput="upCreature('${id}','xp',this.value);document.getElementById('xp-disp-${id}').textContent=this.value||0">
+      </div>
+    </div>
+
+    <div class="ds">
+      <div class="dst">Anotações</div>
+      <div class="rich-ea tall" contenteditable="true"
+        data-save="creature:${id}:notes"
+        data-initial='${JSON.stringify(c.notes||"")}'
+        data-placeholder="Comportamento, fraquezas, habitat, lore... ({{ para mencionar local)"></div>
+    </div>
+
+    <div class="ds">
+      <div class="dst">Afiliações</div>
+      <div id="aff-${id}" class="afflist">${renderCreatureAffs(c)}</div>
+      <button class="btn-adds" onclick="openAffMod('creature','${id}')">＋ Adicionar Afiliação</button>
+    </div>
+
+    <div class="ds">
+      <div class="dst">Cadeia Evolutiva / Variantes</div>
+      <div id="evo-${id}" class="evo-chain">${renderEvoChain(c)}</div>
+      <button class="btn-adds" style="margin-top:10px" onclick="openEvoMod('${id}')">＋ Adicionar à Cadeia</button>
+    </div>`;
+  openPanel();
+  initAllRichFields();
+}
+
+function renderCreatureAffs(c){
+  if(!c.affiliations||!c.affiliations.length) return `<div class="hint">Nenhuma afiliação adicionada.</div>`;
+  return c.affiliations.map((a,i)=>{
+    let t, emoji, isC;
+    if(a.targetType==='creature'){t=byId(S.creatures,a.targetId);emoji='🐉';isC=true;}
+    else{t=byId(S.characters,a.targetId);emoji='🧙';isC=false;}
+    if(!t)return '';
+    return `<div class="affitem">
+      ${t.photo?`<img src="${t.photo}" class="affav${isC?' sqr':''}">`:`<div class="affav${isC?' sqr':''}">${emoji}</div>`}
+      <div class="affinf">
+        <div class="affname">${esc(t.name)}</div>
+        <div class="affsub">${isC?'Criatura':'Personagem'}</div>
+      </div>
+      <input class="afftype" value="${esc(a.type)}" placeholder="tipo de relação"
+        oninput="upAff('creature','${c.id}',${i},this.value)">
+      <button class="btn-rm" onclick="rmAff('creature','${c.id}',${i})">×</button>
+    </div>`;
+  }).join('');
+}
+
+function upCreature(id,field,val){
+  const c=byId(S.creatures,id);if(!c)return;
+  c[field]=(field==='hp'||field==='xp')?(parseInt(val)||0):val;save();
+}
+
+// ============ EVO CHAIN ============
+function renderEvoChain(c){
+  if(!c.evoLinks||!c.evoLinks.length)
+    return `<div class="hint">Nenhuma evolução/variante vinculada.</div>`;
+
+  function cardSelf(){ return `
+    <div class="evo-card evo-active">
+      ${c.photo?`<img src="${c.photo}" class="evo-img" style="object-fit:cover;">`:`<div class="evo-img">🐉</div>`}
+      <div class="evo-info">
+        <div class="evo-name">${esc(c.name)}</div>
+        <div class="evo-you">● você</div>
+      </div>
+    </div>`; }
+
+  function cardOther(t){ return `
+    <div class="evo-card evo-dim" onclick="openCreature('${t.id}')">
+      ${t.photo?`<img src="${t.photo}" class="evo-img" style="object-fit:cover;">`:`<div class="evo-img">🐉</div>`}
+      <div class="evo-info">
+        <div class="evo-name">${esc(t.name)}</div>
+        ${t.type?`<div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:1px">${esc(t.type)}</div>`:''}
+      </div>
+    </div>`; }
+
+  return c.evoLinks.map((link,i)=>{
+    const t=byId(S.creatures,link.targetId); if(!t) return '';
+    // side:'left'  → current creature is on the LEFT  → [self] ——— [other]
+    // side:'right' → current creature is on the RIGHT → [other] ——— [self]
+    const isLeft = !link.side || link.side==='left';
+    const leftCard  = isLeft ? cardSelf()  : cardOther(t);
+    const rightCard = isLeft ? cardOther(t): cardSelf();
+    return `<div class="evo-row">
+      ${leftCard}
+      <div class="evo-connector">
+        <div class="evo-line"></div>
+        <input class="evo-label" value="${esc(link.label||'')}" placeholder="Evolução, Variante..."
+          oninput="upEvoLabel('${c.id}',${i},this.value)">
+        <div class="evo-line"></div>
+      </div>
+      ${rightCard}
+      <button class="evo-rm" onclick="rmEvoLink('${c.id}','${t.id}')" title="Remover">×</button>
+    </div>`;
+  }).join('');
+}
+
+function upEvoLabel(cid,idx,val){
+  const c=byId(S.creatures,cid);if(!c||!c.evoLinks)return;
+  if(!c.evoLinks[idx])return;
+  const targetId=c.evoLinks[idx].targetId;
+  c.evoLinks[idx].label=val;
+  // Sync label on the other side too
+  const t=byId(S.creatures,targetId);
+  if(t&&t.evoLinks){
+    const back=t.evoLinks.find(l=>l.targetId===cid);
+    if(back) back.label=val;
+  }
+  save();
+}
+
+function rmEvoLink(cid,targetId){
+  const c=byId(S.creatures,cid);
+  const t=byId(S.creatures,targetId);
+  if(c&&c.evoLinks) c.evoLinks=c.evoLinks.filter(l=>l.targetId!==targetId);
+  if(t&&t.evoLinks) t.evoLinks=t.evoLinks.filter(l=>l.targetId!==cid);
+  save();
+  const el=document.getElementById(`evo-${cid}`);
+  if(el) el.innerHTML=renderEvoChain(c);
+}
+
+function openEvoMod(cid){
+  const c=byId(S.creatures,cid);if(!c)return;
+  const mod=document.getElementById('evomod');
+  const list=document.getElementById('evomod-list');
+  const linked=(c.evoLinks||[]).map(l=>l.targetId);
+  const available=S.creatures.filter(cr=>cr.id!==cid&&!linked.includes(cr.id));
+  if(!available.length){
+    list.innerHTML=`<div class="hint" style="text-align:center;padding:20px">
+      ${S.creatures.length<=1?'Nenhuma outra criatura cadastrada ainda.':'Todas as criaturas já estão na cadeia.'}
+    </div>`;
+  } else {
+    list.innerHTML=available.map(cr=>`
+      <div class="sitem" onclick="addEvoLink('${cid}','${cr.id}')">
+        ${cr.photo?`<img src="${cr.photo}" style="border-radius:10px">`:`<div class="sph sqr">🐉</div>`}
+        <div>
+          <div class="sname">${esc(cr.name)}</div>
+          <div class="ssub">${cr.type?esc(cr.type):'Criatura'} · ❤️ ${cr.hp||0} HP</div>
+        </div>
+      </div>`).join('');
+  }
+  mod.dataset.cid=cid;
+  mod.classList.add('open');
+}
+
+function addEvoLink(cid,targetId){
+  const c=byId(S.creatures,cid);
+  const t=byId(S.creatures,targetId);
+  if(!c||!t)return;
+  if(!c.evoLinks)c.evoLinks=[];
+  if(!t.evoLinks)t.evoLinks=[];
+  // cid is the initiator → left side. target → right side.
+  if(!c.evoLinks.find(l=>l.targetId===targetId))
+    c.evoLinks.push({targetId, label:'', side:'left'});
+  if(!t.evoLinks.find(l=>l.targetId===cid))
+    t.evoLinks.push({targetId:cid, label:'', side:'right'});
+  save();
+  const el=document.getElementById(`evo-${cid}`);
+  if(el) el.innerHTML=renderEvoChain(c);
+  closeEvoMod();
+}
+
+function closeEvoMod(){ document.getElementById('evomod').classList.remove('open'); }
+
+// ============ DELETE ============
+function delEntity(type,id){
+  if(!confirm('Excluir este registro? Esta ação não pode ser desfeita.'))return;
+  if(type==='char'){
+    S.characters=S.characters.filter(c=>c.id!==id);
+    S.characters.forEach(c=>{if(c.affiliations)c.affiliations=c.affiliations.filter(a=>a.targetId!==id);});
+  } else if(type==='item'){
+    S.items=S.items.filter(i=>i.id!==id);
+    S.characters.forEach(c=>{if(c.items)c.items=c.items.filter(i=>i!==id);});
+  } else if(type==='creature'){
+    S.creatures=S.creatures.filter(c=>c.id!==id);
+    S.creatures.forEach(c=>{
+      if(c.affiliations) c.affiliations=c.affiliations.filter(a=>a.targetId!==id);
+      if(c.evoLinks) c.evoLinks=c.evoLinks.filter(l=>l.targetId!==id);
+    });
+  } else if(type==='location'){
+    S.locations=S.locations.filter(l=>l.id!==id);
+  }
+  save(); closePanel();
+}
+
+// ============ PHOTO UPLOAD ============
+function triggerPhoto(type,id){
+  const inp=document.getElementById('photo-inp');
+  inp.onchange=(e)=>{
+    const f=e.target.files[0];if(!f)return;
+    const r=new FileReader();
+    r.onload=(ev)=>{
+      const d=ev.target.result;
+      if(type==='char'){const c=byId(S.characters,id);if(c){c.photo=d;save();openChar(id);}}
+      else if(type==='item'){const it=byId(S.items,id);if(it){it.photo=d;save();openItem(id);}}
+      else if(type==='creature'){const c=byId(S.creatures,id);if(c){c.photo=d;save();openCreature(id);}}
+      else if(type==='location'){const l=byId(S.locations,id);if(l){l.photo=d;save();openLocation(id);}}
+    };
+    r.readAsDataURL(f);
+    inp.value='';
+  };
+  inp.click();
+}
+
+// ============ FORMAT ============
+function fmtStat(v){
+  v=Math.max(0,parseInt(v)||0);
+  if(v>=10000) return (v/10000).toFixed(v%10000===0?0:1).replace(/\.0$/,'')+'M';
+  if(v>=1000)  return (v/1000).toFixed(v%1000===0?0:1).replace(/\.0$/,'')+'K';
+  return String(v);
+}
+
+// ============ RADAR CHART ============
+function drawRadar(stats){
+  const W=300,H=310,cx=150,cy=158,R=98,n=6;
+  const vals=SK.map(k=>stats[k]||0);
+  const MAX=Math.max(...vals,100);
+
+  // Grid
+  let grid='';
+  for(let lvl=1;lvl<=5;lvl++){
+    const lr=R*lvl/5;
+    const pts=Array.from({length:n},(_,i)=>{
+      const a=(i*60-90)*Math.PI/180;
+      return `${cx+lr*Math.cos(a)},${cy+lr*Math.sin(a)}`;
+    }).join(' ');
+    grid+=`<polygon points="${pts}" fill="none" stroke="rgba(112,48,239,${0.08+lvl*0.07})" stroke-width="1"/>`;
+    if(lvl%2===0){
+      const la=(-90)*Math.PI/180;
+      const gridVal=Math.round(MAX*lvl/5);
+      grid+=`<text x="${cx+lr*Math.cos(la)+4}" y="${cy+lr*Math.sin(la)}" fill="rgba(255,255,255,0.2)" font-size="9" font-family="Outfit">${fmtStat(gridVal)}</text>`;
+    }
+  }
+
+  // Axes
+  let axes='';
+  for(let i=0;i<n;i++){
+    const a=(i*60-90)*Math.PI/180;
+    axes+=`<line x1="${cx}" y1="${cy}" x2="${cx+R*Math.cos(a)}" y2="${cy+R*Math.sin(a)}" stroke="rgba(112,48,239,0.35)" stroke-width="1"/>`;
+  }
+
+  // Data polygon
+  const dpts=SK.map((k,i)=>{
+    const a=(i*60-90)*Math.PI/180;
+    const v=Math.min((stats[k]||0)/MAX,1);
+    return `${cx+R*v*Math.cos(a)},${cy+R*v*Math.sin(a)}`;
+  });
+
+  // Labels
+  const anchors=['middle','start','start','middle','end','end'];
+  let labels='';
+  SK.forEach((k,i)=>{
+    const a=(i*60-90)*Math.PI/180;
+    const lr=R+26;
+    const lx=cx+lr*Math.cos(a);
+    const ly=cy+lr*Math.sin(a);
+    const anch=anchors[i];
+    const val=stats[k]||0;
+    labels+=`
+      <text x="${lx}" y="${ly-7}" text-anchor="${anch}" dominant-baseline="middle"
+        fill="rgba(255,255,255,0.6)" font-size="9.5" font-family="Outfit" font-weight="700">
+        ${SL[i].slice(0,3).toUpperCase()}
+      </text>
+      <text x="${lx}" y="${ly+8}" text-anchor="${anch}" dominant-baseline="middle"
+        fill="rgba(219,31,255,0.95)" font-size="12" font-family="Outfit" font-weight="900">
+        ${fmtStat(val)}
+      </text>`;
+  });
+
+  // Dots
+  const dots=dpts.map(p=>{
+    const[x,y]=p.split(',');
+    return `<circle cx="${x}" cy="${y}" r="4" fill="#DB1FFF" stroke="#0d0e28" stroke-width="2"/>`;
+  }).join('');
+
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="rfill" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#7030EF" stop-opacity="0.45"/>
+        <stop offset="100%" stop-color="#DB1FFF" stop-opacity="0.45"/>
+      </linearGradient>
+      <linearGradient id="rstroke" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#7030EF"/><stop offset="100%" stop-color="#DB1FFF"/>
+      </linearGradient>
+    </defs>
+    ${grid}${axes}
+    <polygon points="${dpts.join(' ')}" fill="url(#rfill)" stroke="url(#rstroke)" stroke-width="2.5" stroke-linejoin="round"/>
+    ${dots}${labels}
+  </svg>`;
+}
+
+// ============ LOCATION DETAIL ============
+function openLocation(id){
+  curId=id; curType='location';
+  const l=byId(S.locations,id);if(!l)return;
+  document.getElementById('btn-del').onclick=()=>delEntity('location',id);
+  document.getElementById('dbody').innerHTML=`
+    <div class="char-hero">
+      <div class="pw">
+        ${l.photo?`<img src="${l.photo}" class="hphoto" style="border-radius:22px;width:150px;height:110px;">`
+          :`<div class="hph" style="border-radius:22px;width:150px;height:110px;font-size:52px">🏔️</div>`}
+        <div class="pedit" onclick="triggerPhoto('location','${id}')">✏️</div>
+      </div>
+      <div class="hinfo">
+        <input class="ename" value="${esc(l.name)}" placeholder="Nome do local"
+          oninput="upLocation('${id}','name',this.value)">
+        <div class="mrow">
+          <div class="mf" style="flex:1">
+            <div class="ml">Tipo</div>
+            <input class="mi" value="${esc(l.type||'')}" placeholder="ex: Cidade, Floresta, Masmorra..."
+              oninput="upLocation('${id}','type',this.value)" style="width:100%">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ds">
+      <div class="dst">Descrição</div>
+      <div class="rich-ea" contenteditable="true"
+        data-save="location:${id}:description"
+        data-initial='${JSON.stringify(l.description||"")}'
+        data-placeholder="Descreva este local... ({{ para mencionar outro local)"></div>
+    </div>
+
+    <div class="ds">
+      <div class="dst">Anotações do Mestre</div>
+      <div class="rich-ea tall" contenteditable="true"
+        data-save="location:${id}:notes"
+        data-initial='${JSON.stringify(l.notes||"")}'
+        data-placeholder="Eventos, NPCs frequentes, segredos... ({{ para mencionar local)"></div>
+    </div>`;
+  openPanel();
+  initAllRichFields();
+}
+
+function upLocation(id,field,val){
+  const l=byId(S.locations,id);if(!l)return;l[field]=val;save();
+}
+
+// ============ RICH TEXT FIELDS ({{ loc chips )) ============
+let _dropTarget=null, _dropSelIdx=0;
+
+/* Serialize contenteditable → plain string (chips become {{name}}) */
+function serializeRich(el){
+  let r='';
+  function walk(n){
+    if(n.nodeType===Node.TEXT_NODE){ r+=n.textContent.replace(/\u200B/g,''); }
+    else if(n.nodeType===Node.ELEMENT_NODE){
+      if(n.classList.contains('loc-chip')){ r+='{{'+n.dataset.locName+'}}'; }
+      else if(n.tagName==='BR'){ r+='\n'; }
+      else{ n.childNodes.forEach(walk); }
+    }
+  }
+  el.childNodes.forEach(walk);
+  return r;
+}
+
+/* Parse stored string → innerHTML with chips */
+function parseToRich(str){
+  if(!str) return '';
+  return str.split(/({{[^}]*}})/g).map(part=>{
+    const m=part.match(/^{{(.+)}}$/);
+    if(m){
+      const name=m[1];
+      const loc=S.locations.find(l=>l.name===name);
+      return `<span class="loc-chip" contenteditable="false" data-loc-name="${esc(name)}" data-loc-id="${loc?loc.id:''}" title="Local: ${esc(name)}">📍 ${esc(name)}</span>\u200B`;
+    }
+    return part.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  }).join('');
+}
+
+/* Attach handlers to a .rich-ea element */
+function initRichField(el){
+  if(el._richInited) return;
+  el._richInited=true;
+  // data-initial is JSON-encoded to survive HTML attribute normalization
+  let raw='';
+  try{ raw=JSON.parse(el.dataset.initial||'""'); }catch(e){ raw=el.dataset.initial||''; }
+  el.innerHTML=parseToRich(raw)||'';
+  updateEmpty(el);
+  el.addEventListener('input',()=>{
+    updateEmpty(el);
+    const val=serializeRich(el);
+    const parts=el.dataset.save.split(':');
+    const type=parts[0];
+    if(type==='char') upChar(parts[1],parts[2],val);
+    else if(type==='item') upItem(parts[1],parts[2],val);
+    else if(type==='creature') upCreature(parts[1],parts[2],val);
+    else if(type==='location') upLocation(parts[1],parts[2],val);
+    else if(type==='chap'){ upChap(parts[1],parts[2],val); }
+    else if(type==='scene'){ upScene(parts[1],parts[2],parts[3],val); }
+    watchBracesRich(el);
+  });
+  el.addEventListener('focus',()=>{ _dropTarget=el; });
+  el.addEventListener('blur',()=>scheduleHideDrop());
+  el.addEventListener('keydown',handleRichKey);
+}
+
+function initAllRichFields(){
+  document.querySelectorAll('.rich-ea').forEach(el=>initRichField(el));
+}
+
+function updateEmpty(el){
+  const txt=serializeRich(el).trim();
+  el.dataset.empty=txt===''?'true':'false';
+}
+
+function getTextBeforeCursor(el){
+  const sel=window.getSelection();
+  if(!sel||!sel.rangeCount) return '';
+  try{
+    const r=sel.getRangeAt(0).cloneRange();
+    r.selectNodeContents(el);
+    r.setEnd(sel.focusNode,sel.focusOffset);
+    return r.toString().replace(/\u200B/g,'');
+  }catch(e){ return ''; }
+}
+
+function watchBracesRich(el){
+  const before=getTextBeforeCursor(el);
+  if(before.slice(-2)==='{{') showLocDropRich(el);
+  else if(!before.endsWith('{')) hideDrop();
+}
+
+function showLocDropRich(el){
+  const dd=document.getElementById('loc-dropdown');
+  const list=document.getElementById('ldd-list');
+  _dropTarget=el; _dropSelIdx=0;
+  if(!S.locations.length){
+    list.innerHTML=`<div class="ldd-empty">Nenhum local cadastrado ainda.</div>`;
+  } else {
+    list.innerHTML=S.locations.map((l,i)=>`
+      <div class="ldd-item${i===0?' sel':''}" data-idx="${i}"
+        onmousedown="pickLocRich(event,'${l.id}','${esc(l.name)}')">
+        ${l.photo?`<img src="${l.photo}" class="ldd-img">`:`<div class="ldd-ph">🏔️</div>`}
+        <div>
+          <div class="ldd-name">${esc(l.name)}</div>
+          ${l.type?`<div class="ldd-type">${esc(l.type)}</div>`:''}
+        </div>
+      </div>`).join('');
+  }
+  // Position at caret
+  const sel=window.getSelection();
+  let top=200,left=200;
+  if(sel&&sel.rangeCount){
+    const rr=sel.getRangeAt(0).getBoundingClientRect();
+    if(rr.top||rr.left){
+      top=Math.min(rr.bottom+8,window.innerHeight-280);
+      left=Math.min(rr.left,window.innerWidth-340);
+    } else {
+      const er=el.getBoundingClientRect();
+      top=Math.min(er.bottom+4,window.innerHeight-280);
+      left=er.left;
+    }
+  }
+  dd.style.top=top+'px'; dd.style.left=left+'px';
+  dd.classList.add('open');
+}
+
+function pickLocRich(e,locId,locName){
+  e.preventDefault();
+  const el=_dropTarget; if(!el) return;
+  const sel=window.getSelection();
+  if(!sel||!sel.rangeCount) return;
+  const focusNode=sel.focusNode;
+  const focusOffset=sel.focusOffset;
+  // Must be a text node with {{ right before cursor
+  if(focusNode&&focusNode.nodeType===Node.TEXT_NODE){
+    const txt=focusNode.textContent;
+    // find {{ ending at focusOffset (ignoring ZWS)
+    const clean=txt.slice(0,focusOffset).replace(/\u200B/g,'');
+    const bi=clean.lastIndexOf('{{');
+    if(bi!==-1){
+      // Real offset in txt (with ZWS) corresponding to bi
+      let realBi=0,cleanCount=0;
+      for(let i=0;i<txt.length&&cleanCount<bi;i++){
+        if(txt[i]!=='\u200B') cleanCount++;
+        realBi=i+1;
+      }
+      // Delete from realBi to focusOffset
+      focusNode.textContent=txt.slice(0,realBi)+txt.slice(focusOffset);
+      // Split at realBi
+      const after=focusNode.splitText(realBi);
+      // Create chip
+      const chip=document.createElement('span');
+      chip.className='loc-chip';
+      chip.contentEditable='false';
+      chip.dataset.locName=locName;
+      chip.dataset.locId=locId;
+      chip.title='Local: '+locName;
+      chip.textContent='📍 '+locName;
+      const zws=document.createTextNode('\u200B');
+      focusNode.parentNode.insertBefore(chip,after);
+      focusNode.parentNode.insertBefore(zws,after);
+      // Move cursor after zws
+      const nr=document.createRange();
+      nr.setStart(zws,1); nr.collapse(true);
+      sel.removeAllRanges(); sel.addRange(nr);
+    }
+  }
+  el.dispatchEvent(new Event('input',{bubbles:true}));
+  hideDrop();
+  el.focus();
+}
+
+function hideDrop(){
+  document.getElementById('loc-dropdown').classList.remove('open');
+}
+function scheduleHideDrop(){ setTimeout(hideDrop,200); }
+
+function handleRichKey(e){
+  const dd=document.getElementById('loc-dropdown');
+  if(!dd.classList.contains('open')) return;
+  const items=dd.querySelectorAll('.ldd-item');
+  if(!items.length) return;
+  if(e.key==='ArrowDown'){e.preventDefault();_dropSelIdx=(_dropSelIdx+1)%items.length;}
+  else if(e.key==='ArrowUp'){e.preventDefault();_dropSelIdx=(_dropSelIdx-1+items.length)%items.length;}
+  else if(e.key==='Enter'||e.key==='Tab'){
+    e.preventDefault();
+    const sel=items[_dropSelIdx];
+    if(sel){ const l=S.locations[parseInt(sel.dataset.idx)];if(l)pickLocRich({preventDefault:()=>{}},l.id,l.name); }
+    return;
+  } else if(e.key==='Escape'){hideDrop();return;}
+  items.forEach((it,i)=>it.classList.toggle('sel',i===_dropSelIdx));
+}
+
+// ============ CHAPTERS ============
+let curChapterId = null;
+
+const CHAP_STATUS = {
+  'planejado': {label:'Planejado', emoji:'🔵', badge:'badge-planejado'},
+  'em-jogo':   {label:'Em Jogo',   emoji:'🟢', badge:'badge-em-jogo'},
+  'concluido': {label:'Concluído', emoji:'🟣', badge:'badge-concluido'},
+  'pausado':   {label:'Pausado',   emoji:'🟡', badge:'badge-pausado'},
+};
+
+function newChapter(){
+  const num = (S.chapters.length + 1);
+  const c = {
+    id: uid(),
+    num,
+    title: 'Capítulo ' + num,
+    status: 'planejado',
+    synopsis: '',
+    dm_notes: '',
+    loot_notes: '',
+    participants: [],   // [{type:'char'|'creature', id}]
+    locations: [],      // [locationId]
+    scenes: [],         // [{id, name, notes}]
+    session_date: '',
+    xp_reward: 0,
+  };
+  S.chapters.push(c);
+  save();
+  curChapterId = c.id;
+  renderChaptersView();
+}
+
+function renderChaptersView(){
+  renderChapOverview();
+  renderChapSidebar();
+  if(curChapterId) renderChapEditor(curChapterId);
+}
+
+function renderChapOverview(){
+  const total = S.chapters.length;
+  const done  = S.chapters.filter(c=>c.status==='concluido').length;
+  const inprog = S.chapters.filter(c=>c.status==='em-jogo').length;
+  const pct = total ? Math.round(done/total*100) : 0;
+
+  const ov = document.getElementById('chap-overview');
+  if(!ov) return;
+  ov.innerHTML = `
+    <div class="chov-card"><div class="chov-val">${total}</div><div class="chov-lbl">Capítulos</div></div>
+    <div class="chov-card"><div class="chov-val">${done}</div><div class="chov-lbl">Concluídos</div></div>
+    <div class="chov-card"><div class="chov-val">${inprog}</div><div class="chov-lbl">Em Jogo</div></div>`;
+
+  const fill = document.getElementById('chap-progress-fill');
+  const pctEl = document.getElementById('chap-progress-pct');
+  if(fill) fill.style.width = pct + '%';
+  if(pctEl) pctEl.textContent = pct + '%';
+}
+
+function renderChapSidebar(){
+  const el = document.getElementById('chap-list');
+  if(!el) return;
+  if(!S.chapters.length){
+    el.innerHTML = `<div class="chap-empty-side">Nenhum capítulo ainda.<br>Clique em "+ Novo Capítulo"</div>`;
+    return;
+  }
+  el.innerHTML = S.chapters.map(c=>{
+    const st = CHAP_STATUS[c.status]||CHAP_STATUS['planejado'];
+    const scn = c.scenes?.length||0;
+    return `<div class="chap-item${curChapterId===c.id?' active':''}" onclick="selectChapter('${c.id}')">
+      <div class="chap-item-num">Capítulo ${c.num}</div>
+      <div class="chap-item-name">${esc(c.title)||'Sem título'}</div>
+      <div class="chap-item-meta">
+        <div class="chap-status-dot" style="background:${['planejado','em-jogo','concluido','pausado'].indexOf(c.status)>=0?{'planejado':'#6464ff','em-jogo':'#50c864','concluido':'#db1fff','pausado':'#ffb432'}[c.status]:'#6464ff'}"></div>
+        ${st.label}
+        ${scn?`· ${scn} cena${scn>1?'s':''}` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function selectChapter(id){
+  curChapterId = id;
+  renderChapSidebar();
+  renderChapEditor(id);
+}
+
+function renderChapEditor(id){
+  const c = byId(S.chapters, id);
+  const el = document.getElementById('chap-editor');
+  if(!c||!el) return;
+
+  el.innerHTML = `
+    <div class="chap-ed-header">
+      <div class="chap-ed-left">
+        <div class="chap-num-label">Capítulo ${c.num}</div>
+        <input class="chap-title-inp" value="${esc(c.title)}" placeholder="Título do capítulo..."
+          oninput="upChap('${id}','title',this.value)">
+      </div>
+      <div class="chap-ed-actions">
+        <select class="chap-status-sel" onchange="upChap('${id}','status',this.value);renderChapSidebar();renderChapOverview();renderChapEditor('${id}')">
+          ${Object.entries(CHAP_STATUS).map(([k,v])=>`<option value="${k}"${c.status===k?' selected':''}>${v.emoji} ${v.label}</option>`).join('')}
+        </select>
+        <button class="btn-del" onclick="delChapter('${id}')" style="font-size:12px;padding:8px 12px;">🗑</button>
+      </div>
+    </div>
+
+    <!-- Sinopse -->
+    <div class="chap-section">
+      <div class="chap-sec-label">📝 Sinopse</div>
+      <div class="rich-ea tall" contenteditable="true"
+        data-save="chap:${id}:synopsis"
+        data-initial='${JSON.stringify(c.synopsis||"")}'
+        data-placeholder="Resumo do que acontece neste capítulo... ({{ para mencionar local)"></div>
+    </div>
+
+    <!-- Cenas -->
+    <div class="chap-section">
+      <div class="chap-sec-label">🎬 Cenas</div>
+      <div class="scenes-list" id="scenes-${id}">${renderScenes(c)}</div>
+      <button class="btn-adds" onclick="addScene('${id}')">＋ Nova Cena</button>
+    </div>
+
+    <!-- Participantes -->
+    <div class="chap-section">
+      <div class="chap-sec-label">🧙 Participantes</div>
+      <div class="part-list" id="parts-${id}">${renderParticipants(c)}</div>
+      <button class="part-add-btn" style="margin-top:8px" onclick="openChapPartMod('${id}')">＋ Adicionar</button>
+    </div>
+
+    <!-- Locais -->
+    <div class="chap-section">
+      <div class="chap-sec-label">📍 Locais do Capítulo</div>
+      <div class="loc-link-list" id="chaplocs-${id}">${renderChapLocs(c)}</div>
+      <button class="part-add-btn" style="margin-top:8px" onclick="openChapLocMod('${id}')">＋ Vincular Local</button>
+    </div>
+
+    <!-- Notas do Mestre (DM Notes) -->
+    <div class="chap-section">
+      <div class="chap-sec-label">🎲 Notas do Mestre (privado)</div>
+      <div class="rich-ea tall" contenteditable="true"
+        data-save="chap:${id}:dm_notes"
+        data-initial='${JSON.stringify(c.dm_notes||"")}'
+        data-placeholder="Preparação, dicas, NPCs secretos, reviravoltas planejadas... ({{ para mencionar local)"></div>
+    </div>
+
+    <!-- Loot & Recompensas -->
+    <div class="chap-section">
+      <div class="chap-sec-label">💰 Loot & Recompensas</div>
+      <div class="rich-ea" contenteditable="true"
+        data-save="chap:${id}:loot_notes"
+        data-initial='${JSON.stringify(c.loot_notes||"")}'
+        data-placeholder="Itens encontrados, XP distribuído, conquistas desbloqueadas..."></div>
+    </div>
+
+    <!-- Data da sessão + XP -->
+    <div class="chap-section">
+      <div class="chap-sec-label">📅 Sessão</div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;">
+        <div class="mf">
+          <div class="ml">Data da Sessão</div>
+          <input class="mi" type="date" value="${c.session_date||''}" style="min-width:160px"
+            onchange="upChap('${id}','session_date',this.value)">
+        </div>
+        <div class="mf">
+          <div class="ml">XP Concedido</div>
+          <input class="mi" type="number" min="0" value="${c.xp_reward||0}" style="width:100px"
+            oninput="upChap('${id}','xp_reward',parseInt(this.value)||0)">
+        </div>
+      </div>
+    </div>`;
+
+  initAllRichFields();
+}
+
+function renderScenes(c){
+  if(!c.scenes||!c.scenes.length)
+    return `<div class="hint">Nenhuma cena ainda. Cenas ajudam a estruturar o fluxo do capítulo.</div>`;
+  return c.scenes.map((sc,i)=>`
+    <div class="scene-card" id="scenecard-${sc.id}">
+      <div class="scene-head" onclick="toggleScene('${sc.id}')">
+        <div class="scene-num">${i+1}.</div>
+        <input class="scene-name-inp" value="${esc(sc.name||'')}" placeholder="Nome da cena..."
+          onclick="event.stopPropagation()"
+          oninput="upScene('${c.id}','${sc.id}','name',this.value)">
+        <div class="scene-toggle" id="stog-${sc.id}">▼</div>
+        <button class="scene-rm" onclick="event.stopPropagation();rmScene('${c.id}','${sc.id}')">×</button>
+      </div>
+      <div class="scene-body" id="sbody-${sc.id}">
+        <div class="rich-ea" contenteditable="true"
+          data-save="scene:${c.id}:${sc.id}:notes"
+          data-initial='${JSON.stringify(sc.notes||"")}'
+          data-placeholder="Descreva a cena: o que acontece, quem está envolvido, consequências... ({{ para mencionar local)"
+          style="margin-top:4px;"></div>
+      </div>
+    </div>`).join('');
+}
+
+function toggleScene(scid){
+  const body = document.getElementById('sbody-'+scid);
+  const tog  = document.getElementById('stog-'+scid);
+  if(!body) return;
+  const open = body.classList.toggle('open');
+  if(tog) tog.classList.toggle('open', open);
+  if(open) initAllRichFields();
+}
+
+function addScene(chapId){
+  const c = byId(S.chapters, chapId); if(!c) return;
+  if(!c.scenes) c.scenes = [];
+  c.scenes.push({id:uid(), name:'', notes:''});
+  save();
+  const el = document.getElementById('scenes-'+chapId);
+  if(el){ el.innerHTML = renderScenes(c); initAllRichFields(); }
+}
+
+function rmScene(chapId, scId){
+  const c = byId(S.chapters, chapId); if(!c) return;
+  c.scenes = (c.scenes||[]).filter(s=>s.id!==scId);
+  save();
+  const el = document.getElementById('scenes-'+chapId);
+  if(el) el.innerHTML = renderScenes(c);
+}
+
+function upScene(chapId, scId, field, val){
+  const c = byId(S.chapters, chapId); if(!c) return;
+  const sc = (c.scenes||[]).find(s=>s.id===scId); if(!sc) return;
+  sc[field] = val;
+  save();
+}
+
+function renderParticipants(c){
+  if(!c.participants||!c.participants.length)
+    return `<div class="hint" style="margin:0">Nenhum participante vinculado.</div>`;
+  return c.participants.map((p,i)=>{
+    let ent, emoji;
+    if(p.type==='char'){ ent=byId(S.characters,p.id); emoji='🧙'; }
+    else { ent=byId(S.creatures,p.id); emoji='🐉'; }
+    if(!ent) return '';
+    return `<div class="part-chip">
+      ${ent.photo?`<img src="${ent.photo}" class="part-ph" style="border-radius:50%;object-fit:cover;">`:`<div class="part-ph">${emoji}</div>`}
+      ${esc(ent.name)}
+      <button class="part-rm" onclick="rmChapParticipant('${c.id}',${i})">×</button>
+    </div>`;
+  }).join('');
+}
+
+function rmChapParticipant(chapId, idx){
+  const c=byId(S.chapters,chapId);if(!c)return;
+  c.participants.splice(idx,1); save();
+  const el=document.getElementById('parts-'+chapId);
+  if(el) el.innerHTML=renderParticipants(c);
+}
+
+function renderChapLocs(c){
+  if(!c.locations||!c.locations.length)
+    return `<div class="hint" style="margin:0">Nenhum local vinculado.</div>`;
+  return c.locations.map((lid,i)=>{
+    const l=byId(S.locations,lid); if(!l) return '';
+    return `<div class="loc-link-chip">📍 ${esc(l.name)}<button class="loc-rm" onclick="rmChapLoc('${c.id}',${i})">×</button></div>`;
+  }).join('');
+}
+
+function rmChapLoc(chapId, idx){
+  const c=byId(S.chapters,chapId);if(!c)return;
+  c.locations.splice(idx,1); save();
+  const el=document.getElementById('chaplocs-'+chapId);
+  if(el) el.innerHTML=renderChapLocs(c);
+}
+
+function upChap(id, field, val){
+  const c=byId(S.chapters,id);if(!c)return;
+  c[field]=val; save();
+}
+
+function delChapter(id){
+  if(!confirm('Excluir este capítulo? Esta ação não pode ser desfeita.')) return;
+  S.chapters=S.chapters.filter(c=>c.id!==id);
+  // Re-number
+  S.chapters.forEach((c,i)=>c.num=i+1);
+  curChapterId=S.chapters.length?S.chapters[S.chapters.length-1].id:null;
+  save();
+  renderChaptersView();
+}
+
+// Participant picker
+function openChapPartMod(chapId){
+  const c=byId(S.chapters,chapId); if(!c) return;
+  const mod=document.getElementById('chappartmod');
+  const list=document.getElementById('chappartmod-list');
+  const existing=(c.participants||[]).map(p=>p.id);
+  const chars=S.characters.filter(ch=>!existing.includes(ch.id));
+  const creatures=S.creatures.filter(cr=>!existing.includes(cr.id));
+  let html='';
+  if(chars.length){
+    html+=`<div class="sghead">Personagens</div>`+chars.map(ch=>`
+      <div class="sitem" onclick="addChapParticipant('${chapId}','char','${ch.id}')">
+        ${ch.photo?`<img src="${ch.photo}">`:`<div class="sph">🧙</div>`}
+        <div><div class="sname">${esc(ch.name)}</div><div class="ssub">Personagem</div></div>
+      </div>`).join('');
+  }
+  if(creatures.length){
+    html+=`<div class="sghead">Criaturas</div>`+creatures.map(cr=>`
+      <div class="sitem" onclick="addChapParticipant('${chapId}','creature','${cr.id}')">
+        ${cr.photo?`<img src="${cr.photo}" style="border-radius:12px">`:`<div class="sph sqr">🐉</div>`}
+        <div><div class="sname">${esc(cr.name)}</div><div class="ssub">Criatura</div></div>
+      </div>`).join('');
+  }
+  if(!html) html=`<div class="hint" style="text-align:center;padding:16px">Nenhuma entidade disponível.</div>`;
+  list.innerHTML=html;
+  mod.dataset.chapId=chapId;
+  mod.classList.add('open');
+}
+
+function addChapParticipant(chapId, type, entId){
+  const c=byId(S.chapters,chapId);if(!c)return;
+  if(!c.participants)c.participants=[];
+  if(!c.participants.find(p=>p.id===entId)){
+    c.participants.push({type,id:entId});
+    save();
+    const el=document.getElementById('parts-'+chapId);
+    if(el) el.innerHTML=renderParticipants(c);
+  }
+  closeChapPartMod();
+}
+
+function closeChapPartMod(){ document.getElementById('chappartmod').classList.remove('open'); }
+
+// Location picker
+function openChapLocMod(chapId){
+  const c=byId(S.chapters,chapId); if(!c) return;
+  const mod=document.getElementById('chaplocmod');
+  const list=document.getElementById('chaplocmod-list');
+  const existing=c.locations||[];
+  const avail=S.locations.filter(l=>!existing.includes(l.id));
+  if(!avail.length){
+    list.innerHTML=`<div class="hint" style="text-align:center;padding:16px">${S.locations.length===0?'Nenhum local cadastrado ainda. Vá à aba Locais para criar.':'Todos os locais já estão vinculados.'}</div>`;
+  } else {
+    list.innerHTML=avail.map(l=>`
+      <div class="sitem" onclick="addChapLoc('${chapId}','${l.id}')">
+        ${l.photo?`<img src="${l.photo}" style="border-radius:12px;object-fit:cover;">`:`<div class="sph sqr">🏔️</div>`}
+        <div><div class="sname">${esc(l.name)}</div><div class="ssub">${l.type?esc(l.type):'Local'}</div></div>
+      </div>`).join('');
+  }
+  mod.dataset.chapId=chapId;
+  mod.classList.add('open');
+}
+
+function addChapLoc(chapId, locId){
+  const c=byId(S.chapters,chapId);if(!c)return;
+  if(!c.locations)c.locations=[];
+  if(!c.locations.includes(locId)){
+    c.locations.push(locId);
+    save();
+    const el=document.getElementById('chaplocs-'+chapId);
+    if(el) el.innerHTML=renderChapLocs(c);
+  }
+  closeChapLocMod();
+}
+
+function closeChapLocMod(){ document.getElementById('chaplocmod').classList.remove('open'); }
+
+// Handle scene notes save via rich-ea (extend existing initAllRichFields to handle scene: prefix)
+// The existing data-save="chap:id:field" pattern is handled by extending upRich below.
+
+// ============ END CHAPTERS ============
+
+
+function openLightbox(src){
+  const lb=document.getElementById('lightbox');
+  const img=document.getElementById('lightbox-img');
+  img.src=src;
+  lb.classList.add('open');
+}
+function closeLightbox(){
+  document.getElementById('lightbox').classList.remove('open');
+}
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeLightbox(); });
+
+// Delegate image clicks across the whole document
+document.addEventListener('click',e=>{
+  const img=e.target.closest('img');
+  if(!img||!img.src) return;
+  // Skip dropdown thumbnails and affiliation tiny avatars
+  if(img.closest('#loc-dropdown')) return;
+  if(img.classList.contains('ldd-img')) return;
+  // Only expand actual content images (base64 uploads or real URLs)
+  const isUpload=img.src.startsWith('data:image');
+  const isContent=img.matches('.hphoto,.card-photo,.loc-card-img');
+  if(isUpload||isContent) openLightbox(img.src);
+});
+
+// ============ INIT ============
+document.getElementById('app').style.display='none';
+
+// Handle Enter key on auth inputs
+['login-email','login-pass'].forEach(id=>{
+  document.getElementById(id)?.addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+});
+['signup-email','signup-pass'].forEach(id=>{
+  document.getElementById(id)?.addEventListener('keydown',e=>{ if(e.key==='Enter') doSignup(); });
+});
+
+// Check for existing session on page load
+(async()=>{
+  showLoading(true);
+  try{
+    const result = await Promise.race([
+      sb.auth.getSession(),
+      new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),6000))
+    ]);
+    const session = result?.data?.session;
+    if(session){
+      await onLogin(session.user);
+    } else {
+      showLoading(false);
+    }
+  }catch(e){
+    console.warn('Session check failed:',e);
+    showLoading(false);
+    // Show login screen
+  }
+})();
+
+// Listen for auth state changes (e.g. email confirmation redirect)
+sb.auth.onAuthStateChange(async(event, session)=>{
+  if(event==='SIGNED_IN' && session && !currentUser){
+    await onLogin(session.user);
+  }
+});
+
+</script>
+</body>
+</html>
